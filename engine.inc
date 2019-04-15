@@ -20,22 +20,22 @@ includelib C:\masm32\lib\msimg32.lib
 ;===================
 ;      Structs
 ;===================
-obj struct ; objeto primário (<x, y>):
+obj struct ; Objeto primário (<x, y>):
 	x  dw ?
     y  dw ?
 obj ends
 
-block struct ; estrutura dos blocos (<x, y>): 
+block struct ; Estrutura dos blocos (<x, y>): 
     x   dw ?
     y   dw ?
 block ends
 
-block_row struct ; estrutura da linha de blocos (<ptr_next, <bx, by>>): 
+block_row struct ; Estrutura da linha de blocos (<ptr_next, <bx, by>>): 
     next  dd ?
     value block <>
 block_row ends
 
-grid struct ; estrutura da grade de linhas de blocos (<ptr_next, <ptr_next, <bx, by>>): 
+grid struct ; Estrutura da grade de linhas de blocos (<ptr_next_row, <ptr_next_block, <bx, by>>): 
     next  dd ?
     value block_row <>
 grid ends
@@ -56,15 +56,15 @@ ball ends
 ;     Constantes
 ;=====================
 .const
-	WIN_HT equ 700 ;Altura da janela
-    WIN_WD equ 600 ;Largura da janela
+	WIN_HT equ 700 ; Altura da janela
+    WIN_WD equ 600 ; Largura da janela
 
     OFFSETX equ WIN_WD - HALF_SIZE
     OFFSETY equ WIN_HT - HALF_SIZE
 
-    SCORE_SPACING equ 10 ;Espaço de separação dos digitos do jogo
+    SCORE_SPACING equ 10 ; Espaço de separação dos digitos do jogo
 
-    SPEED equ 4 ;Velocidade dos jogador
+    SPEED equ 4 ; Velocidade dos jogador
 
 
 ;=================
