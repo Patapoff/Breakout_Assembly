@@ -17,33 +17,43 @@ includelib C:\masm32\lib\comdlg32.lib
 includelib C:\masm32\lib\shell32.lib
 includelib C:\masm32\lib\msimg32.lib
 
-;=================
-; Structs
-;=================
-pair struct ;Par ordenado (<a, b>): 
-    x  db ?
-    y  db ?
-pair ends
-
-gameObj struct ;Objeto primário (<x, y, <Vx, Vy>>):
+;===================
+;      Structs
+;===================
+obj struct ; objeto primário (<x, y>):
 	x  dw ?
     y  dw ?
-    
-	speed pair <>
-gameObj ends
+obj ends
 
-player struct ;Dados de um jogador (<Life, <x, y, <Vx, Vy>>>):
-    life db ?
-    direc db ?
-    playerObj gameObj <>
+block struct ; estrutura dos blocos (<x, y>): 
+    x   dw ?
+    y   dw ?
+block ends
+
+block_row struct ; estrutura da linha de blocos (<ptr_next, <bx, by>>): 
+    next  dd ?
+    value block <>
+block_row ends
+
+grid struct ; estrutura da grade de linhas de blocos (<ptr_next, <ptr_next, <bx, by>>): 
+    next  dd ?
+    value block_row <>
+grid ends
+
+player struct ; Dados de um jogador (<x, y, speed>):
+    x     dw ?
+    y     dw ?
+    speed dw ?
 player ends
 
-node struct ;Nó de uma lista ligada
-    next dd ?
-    value gameObj <>
-node ends
+ball struct ; Dados de um jogador (<x, y, <vx, vy>>):
+    x     dw ?
+    y     dw ?
+    speed obj <>
+ball ends
+
 ;=====================
-; Constantes
+;     Constantes
 ;=====================
 .const
 	WIN_HT equ 700 ;Altura da janela
@@ -58,11 +68,11 @@ node ends
 
 
 ;=================
-; data
+;      Data
 ;=================
-.data      
-AppName db "Combat", 0 ;Título da janela
-ClassName db "CombatClass", 0 ;Classe da janela
+.data
+AppName db "Atari Breakout", 0 ; Título da janela
+ClassName db "BreakoutClass", 0 ; Classe da janela
 
 .data?                
 hWnd HWND ?
@@ -72,14 +82,10 @@ hInstance HINSTANCE ?
 ;=================
 ; prototypes
 ;=================
-GameMain proto :DWORD, :DWORD   
+WinMain proto : DWORD, : DWORD   
 
-gameHandler proto :DWORD ;Thread principal do jogo
+GameHandler proto : DWORD ; Thread principal do jogo
 
-updateScreen proto ;Desenha na tela todos os objetos
+UpdateScreen proto ; Desenha na tela todos os objetos
 
-
-
-
-
-
+LoadGraphics proto 
