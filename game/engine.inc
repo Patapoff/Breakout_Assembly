@@ -25,20 +25,21 @@ obj struct ; Objeto primário (<x, y>):
     y  dw ?
 obj ends
 
-block struct ; Estrutura dos blocos (<x, y>): 
-    x   dw ?
-    y   dw ?
+block struct ; Estrutura dos blocos (<<x, y>, bool>): 
+    pos obj <>
+    destroyed db FALSE
 block ends
 
-block_row struct ; Estrutura da linha de blocos (<ptr_next, <bx, by>>): 
+b_layer struct ; Estrutura da camada de blocos (<ptr_next, <bx, by>>): 
     next  dd ?
     value block <>
-block_row ends
+b_layer ends
 
-grid struct ; Estrutura da grade de linhas de blocos (<ptr_next_row, <ptr_next_block, <bx, by>>): 
+b_grid struct ; Estrutura da grade de camada de blocos (<ptr_next_row, <ptr_next_block, <bx, by>>): 
     next  dd ?
-    value block_row <>
-grid ends
+    layer_index db ?
+    value b_layer <>
+b_grid ends 
 
 player struct ; Dados de um jogador (<x, y, speed>):
     x     dw ?
@@ -56,17 +57,15 @@ ball ends
 ;     Constantes
 ;=====================
 .const
+    FALSE equ 0
+    TRUE equ 1
+
 	WIN_HT equ 700 ; Altura da janela
     WIN_WD equ 600 ; Largura da janela
 
     OFFSETX equ WIN_WD - HALF_SIZE
     OFFSETY equ WIN_HT - HALF_SIZE
-
-    SCORE_SPACING equ 10 ; Espaço de separação dos digitos do jogo
-
-    SPEED equ 4 ; Velocidade dos jogador
-
-
+    
 ;=================
 ;      Data
 ;=================
@@ -88,4 +87,4 @@ GameHandler proto : DWORD ; Thread principal do jogo
 
 UpdateScreen proto ; Desenha na tela todos os objetos
 
-LoadGraphics proto 
+LoadGraphics proto
