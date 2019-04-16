@@ -81,7 +81,7 @@ hInstance HINSTANCE ?
 ;=================
 ; prototypes
 ;=================
-WinMain proto : DWORD, : DWORD   
+WinCreate proto : DWORD, : DWORD   
 
 GameHandler proto : DWORD ; Thread principal do jogo
 
