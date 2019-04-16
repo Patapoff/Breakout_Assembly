@@ -23,21 +23,24 @@ WinCreate proc hInst:HINSTANCE, CmdShow:DWORD
     mov    wc.lpfnWndProc, OFFSET WndProc 
     mov    wc.cbClsExtra, NULL 
     mov    wc.cbWndExtra, NULL 
+
     push   hInstance 
     pop    wc.hInstance 
+
     mov    wc.hbrBackground,COLOR_WINDOW+3
     mov    wc.lpszMenuName,NULL 
     mov    wc.lpszClassName,OFFSET ClassName 
 
-    invoke LoadIcon, hInstance, ICON
+    invoke LoadIcon, hInstance, 500
     mov    wc.hIcon, eax 
-    mov    wc.hIconSm, eax 
+    mov    wc.hIconSm, 0
 
     invoke LoadCursor, NULL, IDC_ARROW 
     mov    wc.hCursor,eax 
     invoke RegisterClassEx, addr wc                       ; register our window class 
 
     ;======================================
+
     mov clientRect.left, 0
     mov clientRect.top, 0
     mov clientRect.right, WIN_WD
@@ -49,6 +52,7 @@ WinCreate proc hInst:HINSTANCE, CmdShow:DWORD
     sub eax, clientRect.left
     mov ebx, clientRect.bottom
     sub ebx, clientRect.top
+
     ;==============================
 
     invoke CreateWindowEx, NULL, addr ClassName, addr AppName,\ 
@@ -61,24 +65,32 @@ WinCreate proc hInst:HINSTANCE, CmdShow:DWORD
     invoke UpdateWindow, hwnd                      ; refresh the client area
 
     .WHILE TRUE                                    ; Enter message loop 
-        invoke GetMessage, ADDR msg,NULL, 0, 0 
+        invoke GetMessage, ADDR msg, NULL, 0, 0 
         .BREAK .IF (!eax) 
         invoke TranslateMessage, ADDR msg 
         invoke DispatchMessage, ADDR msg 
-   .ENDW 
-    mov     eax, msg.wParam                        ; return exit code in eax 
-    ret 
+   .ENDW
+
+    mov     eax, msg.wParam                        ; return exit code in eax
+    ret
 WinCreate endp
 
 WndProc proc _hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM 
-    .IF uMsg==WM_DESTROY                           ; if the user closes our window 
-        invoke PostQuitMessage,NULL                ; quit our application
+    .IF uMsg == WM_CREATE                                      ;Carrega as imagens e cria a thread principal:---------
+    
+    .ELSEIF uMsg==WM_DESTROY                                   ; if the user closes our window 
+        invoke PostQuitMessage, NULL                           ; quit our application
+    
+    .ELSEIF uMsg == WM_PAINT                                   ;Atualizar da página:-------------------------------  
+        invoke UpdateScreen
 
-    .ELSE 
-        invoke DefWindowProc,_hWnd,uMsg,wParam,lParam     ; Default message processing 
+    .ELSE
+        invoke DefWindowProc, _hWnd,uMsg, wParam,lParam        ; Default message processing 
         ret 
-    .ENDIF 
+    .ENDIF
+
     xor eax,eax 
+
     ret 
 WndProc endp
 
