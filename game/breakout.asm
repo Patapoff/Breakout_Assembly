@@ -21,6 +21,7 @@ WinCreate proc hInst:HINSTANCE, CmdShow:DWORD
     LOCAL wc:WNDCLASSEX                                            ; create local variables on stack 
     LOCAL msg:MSG 
     LOCAL hwnd:HWND
+    local clientRect:RECT
 
     mov   wc.cbSize,SIZEOF WNDCLASSEX                   ; fill values in members of wc 
     mov   wc.style, CS_HREDRAW or CS_VREDRAW 
@@ -38,18 +39,25 @@ WinCreate proc hInst:HINSTANCE, CmdShow:DWORD
     invoke LoadCursor,NULL,IDC_ARROW 
     mov   wc.hCursor,eax 
     invoke RegisterClassEx, addr wc                       ; register our window class 
-    invoke CreateWindowEx,NULL,\ 
-                ADDR ClassName,\ 
-                ADDR AppName,\ 
-                WS_OVERLAPPEDWINDOW,\ 
-                CW_USEDEFAULT,\ 
-                CW_USEDEFAULT,\ 
-                CW_USEDEFAULT,\ 
-                CW_USEDEFAULT,\ 
-                NULL,\ 
-                NULL,\ 
-                hInst,\ 
-                NULL 
+
+    ;======================================
+    mov clientRect.left, 0
+    mov clientRect.top, 0
+    mov clientRect.right, WIN_WD
+    mov clientRect.bottom, WIN_HT
+
+    invoke AdjustWindowRect, addr clientRect, WS_CAPTION, FALSE
+
+    mov eax, clientRect.right
+    sub eax, clientRect.left
+    mov ebx, clientRect.bottom
+    sub ebx, clientRect.top
+    ;==============================
+
+    invoke CreateWindowEx, NULL, addr ClassName, addr AppName,\ 
+        WS_OVERLAPPED or WS_SYSMENU or WS_MINIMIZEBOX,\ 
+        CW_USEDEFAULT, CW_USEDEFAULT,\
+        eax, ebx, NULL, NULL, hInst, NULL 
     mov   hwnd,eax 
     invoke ShowWindow, hwnd,CmdShow               ; display our window on desktop 
     invoke UpdateWindow, hwnd                                 ; refresh the client area
