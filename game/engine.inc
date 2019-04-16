@@ -65,7 +65,13 @@ ball ends
 
     OFFSETX equ WIN_WD - HALF_SIZE
     OFFSETY equ WIN_HT - HALF_SIZE
-    
+
+    ICON equ 500
+    BACKGROUND equ 100
+    CELLS equ 101
+    BALL equ 102
+    PLAYER equ 103
+
 ;=================
 ;      Data
 ;=================
