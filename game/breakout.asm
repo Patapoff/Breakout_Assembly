@@ -4,12 +4,6 @@ option casemap :none
 
 include engine.inc
 
-.data
-    ClassName db "WindowClass",0        ; nome da classe de janela
-    AppName db "Breakout",0        ;  Nome da Janela
-
-.DATA?                
-hInstance HINSTANCE ?        ; HANDLER
 
 .code 
 start:
@@ -18,6 +12,10 @@ start:
 
     invoke WinCreate, hInstance, SW_SHOWDEFAULT
     invoke ExitProcess, eax
+
+;loadGraphics proc ;Carrega os bitmaps do jogo:
+;ret
+;loadGraphics dd
 
 WinCreate proc hInst:HINSTANCE, CmdShow:DWORD 
     LOCAL wc:WNDCLASSEX                                            ; create local variables on stack 
@@ -31,10 +29,10 @@ WinCreate proc hInst:HINSTANCE, CmdShow:DWORD
     mov   wc.cbWndExtra,NULL 
     push  hInstance 
     pop   wc.hInstance 
-    mov   wc.hbrBackground,COLOR_WINDOW+1 
+    mov   wc.hbrBackground,COLOR_WINDOW+3
     mov   wc.lpszMenuName,NULL 
     mov   wc.lpszClassName,OFFSET ClassName 
-    invoke LoadIcon,hInstance, 
+    invoke LoadIcon,hInstance, 500
     mov   wc.hIcon,eax 
     mov   wc.hIconSm,eax 
     invoke LoadCursor,NULL,IDC_ARROW 
@@ -64,6 +62,17 @@ WinCreate proc hInst:HINSTANCE, CmdShow:DWORD
    .ENDW 
     mov     eax,msg.wParam                                            ; return exit code in eax 
     ret 
-WinMain endp
+WinCreate endp
+
+WndProc proc _hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM 
+    .IF uMsg==WM_DESTROY                           ; if the user closes our window 
+        invoke PostQuitMessage,NULL             ; quit our application 
+    .ELSE 
+        invoke DefWindowProc,_hWnd,uMsg,wParam,lParam     ; Default message processing 
+        ret 
+    .ENDIF 
+    xor eax,eax 
+    ret 
+WndProc endp
 
 end start
