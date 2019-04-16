@@ -60,11 +60,8 @@ ball ends
     FALSE equ 0
     TRUE equ 1
 
-	WIN_HT equ 700 ; Altura da janela
-    WIN_WD equ 600 ; Largura da janela
-
-    OFFSETX equ WIN_WD - HALF_SIZE
-    OFFSETY equ WIN_HT - HALF_SIZE
+    WIN_WD equ 1200 ; Largura da janela
+	WIN_HT equ 750 ; Altura da janela
 
     ICON equ 500
     BACKGROUND equ 100

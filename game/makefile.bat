@@ -23,6 +23,7 @@ goto TheEnd
 \masm32\bin\Link /SUBSYSTEM:WINDOWS /OPT:NOREF %1.obj
 if errorlevel 1 goto errlink
 dir %1.*
+start %1.exe
 goto TheEnd
 
 :errlink
