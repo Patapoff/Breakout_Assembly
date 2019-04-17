@@ -39,3 +39,5 @@ goto TheEnd
 :TheEnd
 
 pause
+
+start %1.exe

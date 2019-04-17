@@ -30,28 +30,26 @@ block struct ; Estrutura dos blocos (<<x, y>, bool>):
     destroyed db FALSE
 block ends
 
-b_layer struct ; Estrutura da camada de blocos (<ptr_next, <bx, by>>): 
-    next  dd ?
-    value block <>
+b_layer struct ; Estrutura da camada de blocos (<layer_index, [<<x, y>, bool>]): 
+    layer_index db ?
+    blocks block 18 dup(<>)
 b_layer ends
 
-b_grid struct ; Estrutura da grade de camada de blocos (<ptr_next_row, <ptr_next_block, <bx, by>>): 
-    next  dd ?
-    layer_index db ?
-    value b_layer <>
+b_grid struct ; Estrutura da grade de camada de blocos ([<layer_index, [<<x, y>, bool>]]): 
+    b_layers b_layer 6 dup(<>)
 b_grid ends 
 
-player struct ; Dados de um jogador (<x, y, speed>):
-    x     dw ?
-    y     dw ?
+player_obj struct ; Dados de um jogador (<x, y, speed>):
+    pos obj <>
+    score dw ?
+    life_count dw ?
     speed dw ?
-player ends
+player_obj ends
 
-ball struct ; Dados de um jogador (<x, y, <vx, vy>>):
-    x     dw ?
-    y     dw ?
+ball_obj struct ; Dados de um jogador (<x, y, <vx, vy>>):
+    pos obj <>
     speed obj <>
-ball ends
+ball_obj ends
 
 ;=====================
 ;     Constantes
@@ -64,10 +62,17 @@ ball ends
 	WIN_HT equ 750 ; Altura da janela
 
     ICON equ 500
-    BACKGROUND equ 100
-    CELLS equ 101
-    BALL equ 102
-    PLAYER equ 103
+
+    BACKGROUND_BMP equ 100
+    CELLS_BMP equ 101
+    BALL_BMP equ 102
+    PLAYER_BMP equ 103
+
+    BALL_SIZE equ 15
+    CELL_WD equ 60
+    CELL_HT equ 23
+    PLAYER_WD equ 120
+    PLAYTER_HT equ 23
 
 ;=================
 ;      Data
@@ -77,17 +82,23 @@ AppName db "Atari Breakout", 0 ; Título da janela
 ClassName db "BreakoutClass", 0 ; Classe da janela
 
 .data?                
-hWnd HWND ?
 threadID DWORD ?
-hInstance HINSTANCE ?  
+hInstance HINSTANCE ? 
+
+hBackgroundBmp DWORD ?
+hCellsBmp DWORD ?
+hBallBmp DWORD ?
+hPlayerBmp DWORD ?
 
 ;=================
 ; prototypes
 ;=================
 WinCreate proto : DWORD, : DWORD   
 
+WndProc proto : DWORD, : DWORD, : DWORD, : DWORD   
+
 GameHandler proto : DWORD ; Thread principal do jogo
 
-UpdateScreen proto ; Desenha na tela todos os objetos
+UpdateScreen proto : DWORD ; Desenha na tela todos os objetos
 
-LoadGraphics proto
+LoadAssets proto ; Carrega as imagens do jogo
