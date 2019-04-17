@@ -61,18 +61,20 @@ ball_obj ends
     WIN_WD equ 1200 ; Largura da janela
 	WIN_HT equ 750 ; Altura da janela
 
-    ICON equ 500
-
-    BACKGROUND_BMP equ 100
-    CELLS_BMP equ 101
-    BALL_BMP equ 102
-    PLAYER_BMP equ 103
+    OFFSET_TOP equ 202
 
     BALL_SIZE equ 15
     CELL_WD equ 60
     CELL_HT equ 23
     PLAYER_WD equ 120
     PLAYTER_HT equ 23
+
+    ICON equ 500
+
+    BACKGROUND_BMP equ 100
+    CELLS_BMP equ 101
+    BALL_BMP equ 102
+    PLAYER_BMP equ 103
 
 ;=================
 ;      Data
@@ -93,12 +95,18 @@ hPlayerBmp DWORD ?
 ;=================
 ; prototypes
 ;=================
-WinCreate proto : DWORD, : DWORD   
+WinCreate PROTO : DWORD, : DWORD   
 
-WndProc proto : DWORD, : DWORD, : DWORD, : DWORD   
+WndProc PROTO : DWORD, : DWORD, : DWORD, : DWORD   
 
-GameHandler proto : DWORD ; Thread principal do jogo
+GameHandler PROTO : DWORD ; Thread principal do jogo
 
-UpdateScreen proto : DWORD ; Desenha na tela todos os objetos
+UpdateScreen PROTO : DWORD ; Desenha na tela todos os objetos
 
-LoadAssets proto ; Carrega as imagens do jogo
+UpdatePhysics PROTO ; Atualiza a física do jogo
+
+LoadAssets PROTO ; Carrega as imagens do jogo
+
+MovePlayer PROTO : DWORD ; Move o jogador
+
+MoveBall PROTO : DWORD ; Move a bola
