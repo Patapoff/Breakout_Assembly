@@ -124,15 +124,15 @@ LoadAssets proc ; Carrega os bitmaps e matriz de blocos do jogo:
     mov layer_3.layer_index, 2
     mov layer_4.layer_index, 3
 
-    xor ecx, ecx
-    .WHILE ecx < 18
-        mov layer_1.blocks[ecx], <>
-        mov layer_2.blocks[ecx], <>
-        mov layer_3.blocks[ecx], <>
-        mov layer_4.blocks[ecx], <>
+    ;xor ecx, ecx
+    ;.WHILE ecx < 18
+        ;mov layer_1.blocks[ecx], <>
+        ;mov layer_2.blocks[ecx], <>
+        ;mov layer_3.blocks[ecx], <>
+        ;mov layer_4.blocks[ecx], <>
 
-        inc ecx
-    .ENDW
+        ;inc ecx
+    ;.ENDW
 
     ret
 LoadAssets endp
