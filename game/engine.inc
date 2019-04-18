@@ -21,29 +21,20 @@ includelib C:\masm32\lib\msimg32.lib
 ;      Structs
 ;===================
 obj struct ; Objeto primário (<x, y>):
-	x  dw ?
-    y  dw ?
+	x  dd ?
+    y  dd ?
 obj ends
 
-block struct ; Estrutura dos blocos (<<x, y>, bool>): 
+block_obj struct ; Estrutura dos blocos (<<x, y>, bool>): 
     pos obj <>
     destroyed db FALSE
-block ends
-
-b_layer struct ; Estrutura da camada de blocos (<layer_index, [<<x, y>, bool>]): 
-    layer_index db ?
-    blocks block 18 dup(<>)
-b_layer ends
-
-b_grid struct ; Estrutura da grade de camada de blocos ([<layer_index, [<<x, y>, bool>]]): 
-    b_layers b_layer 6 dup(<>)
-b_grid ends 
+block_obj ends
 
 player_obj struct ; Dados de um jogador (<x, y, speed>):
     pos obj <>
-    score dw ?
-    life_count dw ?
-    speed dw ?
+    score dd ?
+    life_count dd ?
+    speed dd ?
 player_obj ends
 
 ball_obj struct ; Dados de um jogador (<x, y, <vx, vy>>):
@@ -99,14 +90,22 @@ WinCreate PROTO : DWORD, : DWORD
 
 WndProc PROTO : DWORD, : DWORD, : DWORD, : DWORD   
 
-GameHandler PROTO : DWORD ; Thread principal do jogo
+LoadAssets PROTO ; Carrega as imagens do jogo
 
 UpdateScreen PROTO : DWORD ; Desenha na tela todos os objetos
 
 UpdatePhysics PROTO ; Atualiza a física do jogo
 
-LoadAssets PROTO ; Carrega as imagens do jogo
+GameHandler PROTO : DWORD ; Thread principal do jogo
 
-MovePlayer PROTO : DWORD ; Move o jogador
+DrawBackground PROTO : DWORD, : DWORD ; Desenha o background
 
-MoveBall PROTO : DWORD ; Move a bola
+DrawPlayer PROTO : DWORD, : DWORD ; Desenha o jogador
+
+DrawBall PROTO : DWORD, : DWORD ; Desenha a bola
+
+DrawBlocks PROTO : DWORD, : DWORD ; Desenha a bola
+
+MovePlayer PROTO ; Move o jogador
+
+MoveBall PROTO ; Move a bola

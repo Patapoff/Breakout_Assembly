@@ -5,13 +5,13 @@ option casemap :none
 include engine.inc
 
 .data
-    header_format           DB "%Ala: %d", 0
-    header_msg              DB "Resultado", 0
-    buffer                  DB 256 dup(?)
+    format     DB "Value: %d", 0
+    header_msg DB "Result", 0
+    buffer     DB 256 dup(?)
 
     player player_obj <<WIN_WD/2, WIN_HT-70>, 0, 4, 0>
     ball ball_obj <<WIN_WD/2, WIN_HT-300>, <5, 5>>
-    grid b_grid <>
+    blocks block_obj 108 dup(<>)
 
 .code 
 start:
@@ -88,7 +88,13 @@ WndProc proc _hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     .IF uMsg == WM_CREATE                                          ; Carrega as imagens
         INVOKE LoadAssets
 
-        ;MOV eax, OFFSET GameHandler 
+        INVOKE wsprintf, ADDR buffer, ADDR format, blocks[5].pos.x
+        INVOKE MessageBox, 0, ADDR buffer, ADDR header_msg, 0
+
+        INVOKE wsprintf, ADDR buffer, ADDR format, blocks[5].pos.y
+        INVOKE MessageBox, 0, ADDR buffer, ADDR header_msg, 0
+
+        ;MOV eax, OFFSET GameHandler
         ;INVOKE CreateThread, NULL, NULL, eax, 0, 0, ADDR threadID  ; Cria a thread principal
         ;INVOKE CloseHandle, eax 
     .ELSEIF uMsg == WM_DESTROY                                     ; Caso o jogador feche a janela
@@ -105,10 +111,9 @@ WndProc proc _hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 WndProc endp
 
 LoadAssets proc ; Carrega os bitmaps e matriz de blocos do jogo:
-    LOCAL layer_1:b_layer
-    LOCAL layer_2:b_layer
-    LOCAL layer_3:b_layer
-    LOCAL layer_4:b_layer
+    LOCAL block_index:DWORD
+    LOCAL row_index:DWORD
+    LOCAL column_index:DWORD
 
     INVOKE LoadBitmap, hInstance, BACKGROUND_BMP
     MOV    hBackgroundBmp, eax
@@ -122,6 +127,31 @@ LoadAssets proc ; Carrega os bitmaps e matriz de blocos do jogo:
     INVOKE LoadBitmap, hInstance, PLAYER_BMP
     MOV    hPlayerBmp, eax
 
+    MOV row_index, 0
+    .WHILE row_index < 6
+        MOV column_index, 0
+        .WHILE column_index < 18
+            MOV eax, 18
+            MUL row_index
+            ADD eax, column_index
+            MOV block_index, eax
+
+            MOV blocks[block_index].destroyed, FALSE
+
+            MOV eax, CELL_WD
+            MUL column_index
+            MOV blocks[block_index].pos.x, eax
+
+            MOV eax, CELL_HT
+            MUL row_index
+            ADD eax, OFFSET_TOP
+            MOV blocks[block_index].pos.y, eax
+
+            INC column_index
+        .ENDW
+        INC row_index
+    .ENDW
+
     RET
 LoadAssets endp
 
@@ -133,78 +163,126 @@ UpdateScreen proc _hWnd:HWND
     LOCAL  hDC:HDC 
     LOCAL  hMemDC:HDC 
 
-    INVOKE BeginPaint, _hWnd, addr ps
+    INVOKE BeginPaint, _hWnd, ADDR ps
     MOV    hDC, eax
-
     INVOKE CreateCompatibleDC, hDC
     MOV    hMemDC, eax
 
-
-    INVOKE SelectObject, hMemDC, hBackgroundBmp
-    INVOKE BitBlt, hDC, 0, 0, WIN_WD, WIN_HT, hMemDC, 0, 0, SRCCOPY
-
-    INVOKE SelectObject, hMemDC, hPlayerBmp
-    MOVZX  eax, player.pos.x
-    MOVZX  ebx, player.pos.y
-    SUB eax, PLAYER_WD/2
-    INVOKE BitBlt, hDC, eax, ebx, PLAYER_WD, PLAYTER_HT, hMemDC, 0, 0, SRCCOPY
-
-    INVOKE SelectObject, hMemDC, hBallBmp
-    MOVZX  eax, ball.pos.x
-    MOVZX  ebx, ball.pos.y
-    SUB eax, BALL_SIZE/2
-    SUB ebx, BALL_SIZE/2
-    INVOKE BitBlt, hDC, eax, ebx, BALL_SIZE, BALL_SIZE, hMemDC, 0, 0, SRCCOPY
-
-
+    INVOKE DrawBackground, hDC, hMemDC
+    INVOKE DrawBlocks, hDC, hMemDC
+    INVOKE DrawPlayer, hDC, hMemDC
+    INVOKE DrawBall, hDC, hMemDC
+    
     INVOKE DeleteDC, hMemDC
     INVOKE EndPaint, _hWnd, addr ps
+
     RET
 UpdateScreen endp
 
 UpdatePhysics proc
-    INVOKE MovePlayer, offset player
-    INVOKE MoveBall, offset ball
+    INVOKE MovePlayer
+    INVOKE MoveBall
+
+    RET
 UpdatePhysics endp
 
-MovePlayer proc _player:DWORD
-    ASSUME eax : ptr player_obj
-    MOV eax, _player
-
+MovePlayer proc
     ; Incrementa o X
-    MOV bx, [eax].pos.x
-    MOV cx, [eax].speed
+    MOV ebx, player.pos.x
+    MOV ecx, player.speed
+    ADD ebx, ecx
 
-    ADD bx, cx
+    MOV player.pos.x, ebx
 
-    MOV [eax].pos.x, bx
-
-    ASSUME eax:nothing
     RET
 MovePlayer endp
 
-MoveBall proc _ball:DWORD
-    ASSUME eax : ptr ball_obj
-    MOV eax, _ball
-
+MoveBall proc
     ; Incrementa o X
-    MOV bx, [eax].pos.x
-    MOV cx, [eax].speed.x
+    MOV ebx, ball.pos.x
+    MOV ecx, ball.speed.x
+    ADD ebx, ecx
 
-    ADD bx, cx
-
-    MOV [eax].pos.x, bx
+    MOV ball.pos.x, ebx
 
     ; Incrementa o Y
-    MOV bx, [eax].pos.y
-    MOV cx, [eax].speed.y
+    MOV ebx, ball.pos.y
+    MOV ecx, ball.speed.y
+    ADD ebx, ecx
 
-    ADD bx, cx
+    MOV ball.pos.y, ebx
 
-    MOV [eax].pos.y, bx
-
-    ASSUME eax:nothing
     RET
 MoveBall endp
+
+DrawBackground proc _hDC:DWORD, _hMemDC:DWORD
+    INVOKE SelectObject, _hMemDC, hBackgroundBmp
+    INVOKE BitBlt, _hDC, 0, 0, WIN_WD, WIN_HT, _hMemDC, 0, 0, SRCCOPY
+
+    RET
+DrawBackground endp
+
+DrawPlayer proc _hDC:DWORD, _hMemDC:DWORD
+    INVOKE SelectObject, _hMemDC, hPlayerBmp
+    MOV eax, player.pos.x
+    MOV ebx, player.pos.y
+    SUB eax, PLAYER_WD/2
+    INVOKE BitBlt, _hDC, eax, ebx, PLAYER_WD, PLAYTER_HT, _hMemDC, 0, 0, SRCCOPY
+
+    RET
+DrawPlayer endp
+
+DrawBall proc _hDC:DWORD, _hMemDC:DWORD
+    INVOKE SelectObject, _hMemDC, hBallBmp
+    MOV eax, ball.pos.x
+    MOV ebx, ball.pos.y
+    SUB eax, BALL_SIZE/2
+    SUB ebx, BALL_SIZE/2
+    INVOKE BitBlt, _hDC, eax, ebx, BALL_SIZE, BALL_SIZE, _hMemDC, 0, 0, SRCCOPY
+
+    RET
+DrawBall endp
+
+DrawBlocks proc _hDC:DWORD, _hMemDC:DWORD
+    LOCAL block_index:DWORD
+    LOCAL row_index:DWORD
+    LOCAL column_index:DWORD
+
+    LOCAL pos_x:DWORD
+    LOCAL pos_y:DWORD
+
+    LOCAL sprite_offset:DWORD
+
+    INVOKE SelectObject, _hMemDC, hCellsBmp
+
+    MOV row_index, 0
+    .WHILE row_index < 6
+        MOV eax, CELL_HT
+        MUL row_index
+        MOV sprite_offset, eax
+
+        MOV column_index, 0
+        .WHILE column_index < 18
+            MOV eax, 18
+            MUL row_index
+            ADD eax, column_index
+            MOV block_index, eax
+
+            .IF blocks[block_index].destroyed == FALSE
+                MOV eax, blocks[block_index].pos.x
+                MOV pos_x, eax
+                MOV eax, blocks[block_index].pos.y
+                MOV pos_y, eax
+
+                INVOKE BitBlt, _hDC, pos_x, pos_y, CELL_WD, CELL_HT, _hMemDC, 0, sprite_offset, SRCCOPY
+            .ENDIF
+
+            INC column_index
+        .ENDW
+
+        INC row_index
+    .ENDW
+    RET
+DrawBlocks endp
 
 end start
