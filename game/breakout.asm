@@ -11,7 +11,7 @@ include engine.inc
 
     player player_obj <<WIN_WD/2, WIN_HT-70>, 0, 4, 0>
     ball ball_obj <<WIN_WD/2, WIN_HT-300>, <5, 5>>
-    blocks block_obj 108 dup(<>)
+    blocks block_obj 108 dup(<<>, FALSE>)
 
 .code 
 start:
@@ -88,11 +88,8 @@ WndProc proc _hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     .IF uMsg == WM_CREATE                                          ; Carrega as imagens
         INVOKE LoadAssets
 
-        INVOKE wsprintf, ADDR buffer, ADDR format, blocks[5].pos.x
-        INVOKE MessageBox, 0, ADDR buffer, ADDR header_msg, 0
-
-        INVOKE wsprintf, ADDR buffer, ADDR format, blocks[5].pos.y
-        INVOKE MessageBox, 0, ADDR buffer, ADDR header_msg, 0
+        ;INVOKE wsprintf, ADDR buffer, ADDR format, blocks[0].pos.x
+        ;INVOKE MessageBox, 0, ADDR buffer, ADDR header_msg, 0
 
         ;MOV eax, OFFSET GameHandler
         ;INVOKE CreateThread, NULL, NULL, eax, 0, 0, ADDR threadID  ; Cria a thread principal
@@ -126,31 +123,6 @@ LoadAssets proc ; Carrega os bitmaps e matriz de blocos do jogo:
 
     INVOKE LoadBitmap, hInstance, PLAYER_BMP
     MOV    hPlayerBmp, eax
-
-    MOV row_index, 0
-    .WHILE row_index < 6
-        MOV column_index, 0
-        .WHILE column_index < 18
-            MOV eax, 18
-            MUL row_index
-            ADD eax, column_index
-            MOV block_index, eax
-
-            MOV blocks[block_index].destroyed, FALSE
-
-            MOV eax, CELL_WD
-            MUL column_index
-            MOV blocks[block_index].pos.x, eax
-
-            MOV eax, CELL_HT
-            MUL row_index
-            ADD eax, OFFSET_TOP
-            MOV blocks[block_index].pos.y, eax
-
-            INC column_index
-        .ENDW
-        INC row_index
-    .ENDW
 
     RET
 LoadAssets endp
@@ -268,6 +240,16 @@ DrawBlocks proc _hDC:DWORD, _hMemDC:DWORD
             ADD eax, column_index
             MOV block_index, eax
 
+            MOV eax, CELL_WD
+            MUL column_index
+            ADD eax, CELL_WD
+            MOV blocks[block_index].pos.x, eax
+
+            MOV eax, CELL_HT
+            MUL row_index
+            ADD eax, OFFSET_TOP
+            MOV blocks[block_index].pos.y, eax
+
             .IF blocks[block_index].destroyed == FALSE
                 MOV eax, blocks[block_index].pos.x
                 MOV pos_x, eax
@@ -279,9 +261,9 @@ DrawBlocks proc _hDC:DWORD, _hMemDC:DWORD
 
             INC column_index
         .ENDW
-
         INC row_index
     .ENDW
+
     RET
 DrawBlocks endp
 
