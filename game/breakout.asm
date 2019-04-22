@@ -9,8 +9,8 @@ include engine.inc
     header_msg DB "Result", 0
     buffer     DB 256 dup(?)
 
-    player player_obj <<WIN_WD/2, WIN_HT-70>, 0, 4, 0>
-    ball ball_obj <<WIN_WD/2, WIN_HT-300>, <5, 5>>
+    platform player <0, 4,<WIN_WD/2, WIN_HT-70>,<0,0>>
+    ball actor_obj <<WIN_WD/2, WIN_HT-300>, <5, 5>>
     blocks block_obj 108 dup(<<>, FALSE>)
 
 .code 
@@ -96,16 +96,16 @@ WndProc proc _hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         ;INVOKE CloseHandle, eax 
     .ELSEIF uMsg == WM_KEYDOWN
         .IF (wParam == VK_LEFT)
-           mov player.speed, -SPEED
+           mov platform.player_obj.speed.x, -SPEED
         .ELSEIF (wParam == VK_RIGHT)
-            mov player.speed, SPEED
+            mov platform.player_obj.speed.x, SPEED
         .ENDIF
     
     .ELSEIF uMsg == WM_KEYUP 
         .IF (wParam == VK_LEFT)
-            mov player.speed, 0
+            mov platform.player_obj.speed.x, 0
         .ELSEIF (wParam == VK_RIGHT)
-            mov player.speed, 0
+            mov platform.player_obj.speed.x, 0
         .ENDIF
     .ELSEIF uMsg == WM_DESTROY                                     ; Caso o jogador feche a janela
         INVOKE PostQuitMessage, NULL                               ; Fecha o jogo
@@ -172,34 +172,43 @@ UpdatePhysics proc
     RET
 UpdatePhysics endp
 
-MovePlayer proc
-    ; Incrementa o X
-    MOV ebx, player.pos.x
-    MOV ecx, player.speed
-    ADD ebx, ecx
+movObj proc uses eax addrObj:dword ;Atualiza a posição de um gameObj de acordo 
+                        ;com sua velocidade:
+    assume ecx:ptr gameObj
+    mov ecx, addrObj
 
-    MOV player.pos.x, ebx
+    ;Eixo x:---------------------------------------------------------------------
+;________________________________________________________________________________
 
-    RET
-MovePlayer endp
+    mov ax, [ecx].x
+    movzx bx, [ecx].speed.x
 
-MoveBall proc
-    ; Incrementa o X
-    MOV ebx, ball.pos.x
-    MOV ecx, ball.speed.x
-    ADD ebx, ecx
+    .if bx > 7fh ;Caso seja negativo:
+        or bx, 65280
+    .endif
 
-    MOV ball.pos.x, ebx
+    add ax, bx
+    mov [ecx].x, ax
 
-    ; Incrementa o Y
-    MOV ebx, ball.pos.y
-    MOV ecx, ball.speed.y
-    ADD ebx, ecx
+    ;Eixo y:---------------------------------------------------------------------
+;________________________________________________________________________________
 
-    MOV ball.pos.y, ebx
+    mov ax, [ecx].y
+    movzx bx, [ecx].speed.y
 
-    RET
-MoveBall endp
+    .if bx > 7fh ;Caso seja negativo:
+        or bx, 65280
+    .endif
+
+    add ax, bx
+    mov [ecx].y, ax
+;________________________________________________________________________________
+    
+    assume ecx:nothing
+
+    ret
+movObj endp
+
 
 DrawBackground proc _hDC:DWORD, _hMemDC:DWORD
     INVOKE SelectObject, _hMemDC, hBackgroundBmp
@@ -210,8 +219,8 @@ DrawBackground endp
 
 DrawPlayer proc _hDC:DWORD, _hMemDC:DWORD
     INVOKE SelectObject, _hMemDC, hPlayerBmp
-    MOV eax, player.pos.x
-    MOV ebx, player.pos.y
+    MOV eax, platform.player_obj.pos.x
+    MOV ebx, platform.player_obj.pos.y
     SUB eax, PLAYER_WD/2
     INVOKE BitBlt, _hDC, eax, ebx, PLAYER_WD, PLAYTER_HT, _hMemDC, 0, 0, SRCCOPY
 

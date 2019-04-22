@@ -25,22 +25,23 @@ obj struct ; Objeto primário (<x, y>):
     y  dd ?
 obj ends
 
+actor_obj struct ; Estrutura de um ator(<<x, y>, <vx, vy>>)
+    pos   obj<>
+    speed obj<>
+actor_obj ends
+
 block_obj struct ; Estrutura dos blocos (<<x, y>, bool>): 
     pos obj <>
     destroyed db FALSE
 block_obj ends
 
-player_obj struct ; Dados de um jogador (<x, y, speed>):
-    pos obj <>
+player struct ; Dados de um jogador (<x, y, <px, py>,<vx, vy>>):
     score dd ?
     life_count dd ?
-    speed dd ?
-player_obj ends
+    player_obj actor_obj<>
+player ends
 
-ball_obj struct ; Dados de um jogador (<x, y, <vx, vy>>):
-    pos obj <>
-    speed obj <>
-ball_obj ends
+
 
 ;=====================
 ;     Constantes
