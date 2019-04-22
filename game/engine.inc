@@ -59,6 +59,7 @@ ball_obj ends
     CELL_HT equ 23
     PLAYER_WD equ 120
     PLAYTER_HT equ 23
+    SPEED equ 8
 
     ICON equ 500
 

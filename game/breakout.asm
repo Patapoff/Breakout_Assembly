@@ -94,6 +94,19 @@ WndProc proc _hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         ;MOV eax, OFFSET GameHandler
         ;INVOKE CreateThread, NULL, NULL, eax, 0, 0, ADDR threadID  ; Cria a thread principal
         ;INVOKE CloseHandle, eax 
+    .ELSEIF uMsg == WM_KEYDOWN
+        .IF (wParam == VK_LEFT)
+           mov player.speed, -SPEED
+        .ELSEIF (wParam == VK_RIGHT)
+            mov player.speed, SPEED
+        .ENDIF
+    
+    .ELSEIF uMsg == WM_KEYUP 
+        .IF (wParam == VK_LEFT)
+            mov player.speed, 0
+        .ELSEIF (wParam == VK_RIGHT)
+            mov player.speed, 0
+        .ENDIF
     .ELSEIF uMsg == WM_DESTROY                                     ; Caso o jogador feche a janela
         INVOKE PostQuitMessage, NULL                               ; Fecha o jogo
     .ELSEIF uMsg == WM_PAINT      
@@ -140,6 +153,7 @@ UpdateScreen proc _hWnd:HWND
     INVOKE CreateCompatibleDC, hDC
     MOV    hMemDC, eax
 
+    INVOKE UpdatePhysics
     INVOKE DrawBackground, hDC, hMemDC
     INVOKE DrawBlocks, hDC, hMemDC
     INVOKE DrawPlayer, hDC, hMemDC
