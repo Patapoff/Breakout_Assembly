@@ -25,22 +25,26 @@ obj struct ; Objeto primário (<x, y>):
     y  dd ?
 obj ends
 
-actor_obj struct ; Estrutura de um ator(<<x, y>, <vx, vy>>)
-    pos   obj<>
-    speed obj<>
-actor_obj ends
+ball_obj struct ; Estrutura de um ator
+    x dd ?
+    y dd ?
+    speedx dd ?
+    speedy dd ?
+ball_obj ends
 
-block_obj struct ; Estrutura dos blocos (<<x, y>, bool>): 
-    pos obj <>
-    destroyed dd FALSE
-block_obj ends
-
-player struct ; Dados de um jogador (<x, y, <px, py>,<vx, vy>>):
+player_obj struct ; Dados de um jogador
+    x dd ?
+    y dd ?
+    speedx dd ?
     score dd ?
     life_count dd ?
-    player_obj actor_obj<>
-player ends
+player_obj ends
 
+block_obj struct ; Estrutura dos blocos 
+    x dd ?
+    y dd ?
+    destroyed db FALSE
+block_obj ends
 
 
 ;=====================
@@ -53,14 +57,24 @@ player ends
     WIN_WD equ 1200 ; Largura da janela
 	WIN_HT equ 750 ; Altura da janela
 
-    OFFSET_TOP equ 202
+    WM_UPDATE equ WM_USER+100h
 
-    BALL_SIZE equ 15
+    OFFSET_TOP equ 202
+    OFFSET_SIDE equ 60
+    OFFSET_BOTTOM equ 70
+
+    X_MIN_LIMIT equ 60
+    X_MAX_LIMIT equ 1140
+    Y_MAX_LIMIT equ 109
+
+    BALL_WD equ 15
     CELL_WD equ 60
     CELL_HT equ 23
     PLAYER_WD equ 120
-    PLAYTER_HT equ 23
-    SPEED equ 8
+    PLAYER_HT equ 23
+    SPEED equ 20
+
+    BLOCK_SIZE equ sizeof block_obj
 
     ICON equ 500
 
@@ -77,8 +91,11 @@ AppName db "Atari Breakout", 0 ; Título da janela
 ClassName db "BreakoutClass", 0 ; Classe da janela
 
 .data?                
-threadID DWORD ?
+ThreadID DWORD ?
+hThread DWORD ?
+hEventStart DWORD ?
 hInstance HINSTANCE ? 
+hWnd HWND ?
 
 hBackgroundBmp DWORD ?
 hCellsBmp DWORD ?
@@ -108,4 +125,6 @@ DrawBall PROTO : DWORD, : DWORD ; Desenha a bola
 
 DrawBlocks PROTO : DWORD, : DWORD ; Desenha a bola
 
-MoveActor proto :DWORD ;Atualiza a posição de um ator
+MovePlayer proto ;Atualiza a posição de um ator
+
+MoveBall proto ;Atualiza a posição de um ator

@@ -1,0 +1,51 @@
+DrawBlocks proc _hDC:DWORD, _hMemDC:DWORD
+    LOCAL block_index:DWORD
+    LOCAL row_index:DWORD
+    LOCAL column_index:DWORD
+
+    LOCAL pos_x:DWORD
+    LOCAL pos_y:DWORD
+
+    LOCAL sprite_offset:DWORD
+
+    INVOKE SelectObject, _hMemDC, hCellsBmp
+
+    MOV row_index, 0
+    .WHILE row_index < 6
+        MOV eax, CELL_HT
+        MUL row_index
+        MOV sprite_offset, eax
+
+        MOV column_index, 0
+        .WHILE column_index < 18
+            MOV eax, 18
+            MUL row_index
+            ADD eax, column_index
+            MOV block_index, eax
+
+            MOV eax, CELL_WD
+            MUL column_index
+            ADD eax, CELL_WD
+            MOV blocks[block_index].pos.x, eax
+
+            MOV eax, CELL_HT
+            MUL row_index
+            ADD eax, OFFSET_TOP
+            MOV blocks[block_index].pos.y, eax
+
+            .IF blocks[block_index].destroyed == FALSE
+                MOV eax, blocks[block_index].pos.x
+                MOV pos_x, eax
+                MOV eax, blocks[block_index].pos.y
+                MOV pos_y, eax
+
+                INVOKE BitBlt, _hDC, pos_x, pos_y, CELL_WD, CELL_HT, _hMemDC, 0, sprite_offset, SRCCOPY
+            .ENDIF
+
+            INC column_index
+        .ENDW
+        INC row_index
+    .ENDW
+
+    RET
+DrawBlocks endp
