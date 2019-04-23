@@ -32,7 +32,7 @@ actor_obj ends
 
 block_obj struct ; Estrutura dos blocos (<<x, y>, bool>): 
     pos obj <>
-    destroyed db FALSE
+    destroyed dd FALSE
 block_obj ends
 
 player struct ; Dados de um jogador (<x, y, <px, py>,<vx, vy>>):
@@ -108,6 +108,4 @@ DrawBall PROTO : DWORD, : DWORD ; Desenha a bola
 
 DrawBlocks PROTO : DWORD, : DWORD ; Desenha a bola
 
-MovePlayer PROTO ; Move o jogador
-
-MoveBall PROTO ; Move a bola
+MoveActor proto :DWORD ;Atualiza a posição de um ator

@@ -9,9 +9,10 @@ include engine.inc
     header_msg DB "Result", 0
     buffer     DB 256 dup(?)
 
-    platform player <0, 4,<WIN_WD/2, WIN_HT-70>,<0,0>>
+    platform player <0, 4,<<WIN_WD/2, WIN_HT-70>,<0,0>>>
     ball actor_obj <<WIN_WD/2, WIN_HT-300>, <5, 5>>
     blocks block_obj 108 dup(<<>, FALSE>)
+    over byte 0 
 
 .code 
 start:
@@ -88,12 +89,13 @@ WndProc proc _hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     .IF uMsg == WM_CREATE                                          ; Carrega as imagens
         INVOKE LoadAssets
 
+
         ;INVOKE wsprintf, ADDR buffer, ADDR format, blocks[0].pos.x
         ;INVOKE MessageBox, 0, ADDR buffer, ADDR header_msg, 0
 
-        ;MOV eax, OFFSET GameHandler
-        ;INVOKE CreateThread, NULL, NULL, eax, 0, 0, ADDR threadID  ; Cria a thread principal
-        ;INVOKE CloseHandle, eax 
+        MOV eax, OFFSET GameHandler
+        INVOKE CreateThread, NULL, NULL, eax, 0, 0, ADDR threadID  ; Cria a thread principal
+        INVOKE CloseHandle, eax 
     .ELSEIF uMsg == WM_KEYDOWN
         .IF (wParam == VK_LEFT)
            mov platform.player_obj.speed.x, -SPEED
@@ -104,6 +106,7 @@ WndProc proc _hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
     .ELSEIF uMsg == WM_KEYUP 
         .IF (wParam == VK_LEFT)
             mov platform.player_obj.speed.x, 0
+
         .ELSEIF (wParam == VK_RIGHT)
             mov platform.player_obj.speed.x, 0
         .ENDIF
@@ -140,9 +143,6 @@ LoadAssets proc ; Carrega os bitmaps e matriz de blocos do jogo:
     RET
 LoadAssets endp
 
-GameHandler proc p:dword
-GameHandler endp
-
 UpdateScreen proc _hWnd:HWND
     LOCAL  ps:PAINTSTRUCT 
     LOCAL  hDC:HDC 
@@ -153,7 +153,7 @@ UpdateScreen proc _hWnd:HWND
     INVOKE CreateCompatibleDC, hDC
     MOV    hMemDC, eax
 
-    INVOKE UpdatePhysics
+    ;INVOKE UpdatePhysics
     INVOKE DrawBackground, hDC, hMemDC
     INVOKE DrawBlocks, hDC, hMemDC
     INVOKE DrawPlayer, hDC, hMemDC
@@ -166,48 +166,37 @@ UpdateScreen proc _hWnd:HWND
 UpdateScreen endp
 
 UpdatePhysics proc
-    INVOKE MovePlayer
-    INVOKE MoveBall
+    ;INVOKE MoveObj, addr platform.player_obj
+    ;INVOKE MoveObj, addr ball
 
     RET
 UpdatePhysics endp
 
-movObj proc uses eax addrObj:dword ;Atualiza a posição de um gameObj de acordo 
-                        ;com sua velocidade:
-    assume ecx:ptr gameObj
-    mov ecx, addrObj
+MoveActor proc uses eax addrObj:dword ;Atualiza a posição de um ator de acordo com sua velocidade
+   
+   assume esi: ptr actor_obj
+    mov esi, addrObj
 
-    ;Eixo x:---------------------------------------------------------------------
-;________________________________________________________________________________
+    ;Eixo x
 
-    mov ax, [ecx].x
-    movzx bx, [ecx].speed.x
 
-    .if bx > 7fh ;Caso seja negativo:
-        or bx, 65280
-    .endif
+    mov eax, [esi].pos.x
+    mov ebx, [esi].speed.x
 
-    add ax, bx
-    mov [ecx].x, ax
+    add eax, ebx
+    mov [esi].pos.x, eax
 
-    ;Eixo y:---------------------------------------------------------------------
-;________________________________________________________________________________
+    ;Eixo y
 
-    mov ax, [ecx].y
-    movzx bx, [ecx].speed.y
+    mov eax, [esi].pos.y
+    mov ebx, [esi].speed.y
 
-    .if bx > 7fh ;Caso seja negativo:
-        or bx, 65280
-    .endif
+    add eax, ebx
+    mov [esi].pos.y, eax
 
-    add ax, bx
-    mov [ecx].y, ax
-;________________________________________________________________________________
-    
-    assume ecx:nothing
-
+    assume esi: nothing
     ret
-movObj endp
+MoveActor endp
 
 
 DrawBackground proc _hDC:DWORD, _hMemDC:DWORD
@@ -289,5 +278,17 @@ DrawBlocks proc _hDC:DWORD, _hMemDC:DWORD
 
     RET
 DrawBlocks endp
+
+GameHandler proc p:dword 
+
+    .while !over
+        invoke  Sleep, 60
+
+        invoke MoveActor, addr ball ;Move todos os tiros na tela
+
+        invoke MoveActor, addr platform.player_obj
+    .endw
+
+GameHandler endp
 
 end start
