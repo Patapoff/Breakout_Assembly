@@ -10,7 +10,7 @@ include engine.inc
     buffer     DB 256 dup(?)
 
     platform player_obj <WIN_WD/2, WIN_HT-OFFSET_BOTTOM, 0, 0, 4>
-    ball ball_obj <WIN_WD/2, WIN_HT-300, -7, -7>
+    ball ball_obj <WIN_WD/2, WIN_HT-300, -9, -9>
     blocks block_obj 108 dup(<0, 0, FALSE>)
     over db FALSE 
 
@@ -203,10 +203,50 @@ UpdatePhysics proc
     INVOKE MovePlayer
     INVOKE MoveBall
 
-    INVOKE InvalidateRect,hWnd,NULL,TRUE
+    INVOKE CheckCollisions
+
+    INVOKE InvalidateRect, hWnd, NULL, TRUE
 
     RET
 UpdatePhysics endp
+
+CheckCollisions proc
+    LOCAL row_index:DWORD
+    LOCAL column_index:DWORD
+
+    LOCAL pos_x:DWORD
+    LOCAL pos_y:DWORD
+
+    MOV esi, offset blocks
+    MOV row_index, 0
+    .WHILE row_index < 6
+        MOV column_index, 0
+        .WHILE column_index < 18
+            MOV eax, DWORD PTR [esi]
+            MOV pos_x, eax
+            MOV eax, DWORD PTR [esi + 4]
+            MOV pos_y, eax
+
+            MOV eax, ball.x
+            .IF eax >= pos_x
+                .IF eax <= pos_x + CELL_WD
+                    MOV eax, ball.y
+                    .IF eax <= pos_y
+                        .IF eax >= pos_y + CELL_HT
+                            MOV BYTE PTR [esi + 8], TRUE
+                        .ENDIF
+                    .ENDIF
+                .ENDIF
+            .ENDIF
+
+            ADD esi, BLOCK_SIZE
+            INC column_index
+        .ENDW
+        INC row_index
+    .ENDW
+
+    RET
+CheckCollisions endp
 
 MoveBall proc ; Atualiza a posição de um ator de acordo com sua velocidade
     ;Eixo x
@@ -324,17 +364,11 @@ DrawBlocks proc _hDC:DWORD, _hMemDC:DWORD
 
         MOV column_index, 0
         .WHILE column_index < 18
-            .IF BYTE PTR [edi + 8] == FALSE
+            .IF BYTE PTR [esi + 8] == FALSE
                 MOV eax, DWORD PTR [esi]
                 MOV pos_x, eax
                 MOV eax, DWORD PTR [esi + 4]
                 MOV pos_y, eax
-
-                INVOKE wsprintf, ADDR buffer, ADDR format, pos_x
-                INVOKE MessageBox, 0, ADDR buffer, ADDR header_msg, 0
-
-                INVOKE wsprintf, ADDR buffer, ADDR format, pos_y
-                INVOKE MessageBox, 0, ADDR buffer, ADDR header_msg, 0
 
                 INVOKE BitBlt, _hDC, pos_x, pos_y, CELL_WD, CELL_HT, _hMemDC, 0, sprite_offset, SRCCOPY
             .ENDIF
@@ -360,7 +394,7 @@ DrawBall proc _hDC:DWORD, _hMemDC:DWORD
 DrawBall endp
 
 GameHandler proc Param:dword 
-    INVOKE WaitForSingleObject, hEventStart, 45
+    INVOKE WaitForSingleObject, hEventStart, 60
 
     .IF eax == WAIT_TIMEOUT
             INVOKE PostMessage, hWnd, WM_UPDATE, NULL, NULL   

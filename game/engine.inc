@@ -128,3 +128,5 @@ DrawBlocks PROTO : DWORD, : DWORD ; Desenha a bola
 MovePlayer proto ;Atualiza a posição de um ator
 
 MoveBall proto ;Atualiza a posição de um ator
+
+CheckCollisions proto
