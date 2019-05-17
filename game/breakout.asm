@@ -231,8 +231,8 @@ CheckCollisions proc
             .IF eax >= pos_x
                 .IF eax <= pos_x + CELL_WD
                     MOV eax, ball.y
-                    .IF eax <= pos_y
-                        .IF eax >= pos_y + CELL_HT
+                    .IF eax >= pos_y
+                        .IF eax <= pos_y + CELL_HT
                             MOV BYTE PTR [esi + 8], TRUE
                         .ENDIF
                     .ENDIF
@@ -402,7 +402,7 @@ GameHandler proc Param:dword
             INVOKE PostMessage, hWnd, WM_UPDATE, NULL, NULL
     .ENDIF
 
-    JMP   GameHandler
+    JMP GameHandler
     RET
 GameHandler endp
 
