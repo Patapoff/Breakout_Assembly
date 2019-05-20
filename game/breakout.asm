@@ -14,6 +14,12 @@ include engine.inc
     blocks block_obj 108 dup(<?, ?, ?>)
     maxrow dd ?
 
+    should_play_beep db FALSE
+    should_play_long_beep db FALSE
+    should_play_plop db FALSE
+    should_play_starting db FALSE
+    should_play_game_over db FALSE
+
 .code 
 start:
     INVOKE GetModuleHandle, NULL
@@ -92,11 +98,22 @@ WndProc proc _hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
 
 
         INVOKE CreateEvent, NULL, FALSE, FALSE, NULL
-		MOV    hEventStart, eax
+		MOV    hGameEventStart, eax
 
         MOV eax, OFFSET GameHandler
-        INVOKE CreateThread, NULL, NULL, eax, 0, 0, ADDR ThreadID  ; Cria a thread principal
+        INVOKE CreateThread, NULL, NULL, eax, 0, 0, ADDR GameHandlerID  ; Cria a thread principal
         INVOKE CloseHandle, eax
+
+
+        INVOKE CreateEvent, NULL, FALSE, FALSE, NULL
+		MOV    hSoundEventStart, eax
+
+        MOV eax, OFFSET SoundHandler
+        INVOKE CreateThread, NULL, NULL, eax, 0, 0, ADDR SoundHandlerID  ; Cria a thread principal
+        INVOKE CloseHandle, eax
+
+        ;INVOKE wsprintf, ADDR buffer, ADDR format, 0
+        ;INVOKE MessageBox, 0, ADDR buffer, ADDR header_msg, 0
 
     .ELSEIF uMsg == WM_KEYDOWN
 
@@ -151,6 +168,8 @@ LoadAssets proc ; Carrega os bitmaps e matriz de blocos do jogo:
     INVOKE LoadBitmap, hInstance, PLAYER_BMP
     MOV    hPlayerBmp, eax
 
+    
+
     RET
 LoadAssets endp
 
@@ -164,10 +183,15 @@ UpdateScreen proc _hWnd:HWND
     INVOKE CreateCompatibleDC, hDC
     MOV    hMemDC, eax
 
-    INVOKE DrawBackground, hDC, hMemDC
-    INVOKE DrawBlocks, hDC, hMemDC
-    INVOKE DrawPlayer, hDC, hMemDC
-    INVOKE DrawBall, hDC, hMemDC
+    .IF !(should_play_game_over || should_play_starting)
+        INVOKE DrawBackground, hDC, hMemDC
+        INVOKE DrawBlocks, hDC, hMemDC
+        INVOKE DrawPlayer, hDC, hMemDC
+        INVOKE DrawBall, hDC, hMemDC
+    .ELSEIF should_play_game_over
+    .ELSEIF should_play_starting
+        INVOKE DrawBackground, hDC, hMemDC
+    .ENDIF
     
     INVOKE DeleteDC, hMemDC
     INVOKE EndPaint, _hWnd, addr ps
@@ -176,15 +200,18 @@ UpdateScreen proc _hWnd:HWND
 UpdateScreen endp
 
 UpdatePhysics proc
-    INVOKE CheckRestart
-    INVOKE CheckCollisions
+    .IF !(should_play_game_over || should_play_starting)
+        INVOKE CheckRestart
 
-    INVOKE MovePlayer
-    INVOKE MoveBall
+        INVOKE MovePlayer
+        INVOKE MoveBall
 
-    INVOKE InvalidateRect, hWnd, NULL, TRUE
+        INVOKE CheckCollisions
 
-    RET
+        INVOKE InvalidateRect, hWnd, NULL, TRUE
+
+        RET
+    .ENDIF
 UpdatePhysics endp
 
 CheckCollisions proc
@@ -201,11 +228,15 @@ CheckCollisions proc
         MOV eax, ball.speedx
         NEG eax
         MOV ball.speedx, eax
+
+        MOV should_play_beep, TRUE
     .ELSEIF ball.x > ebx
         MOV ball.x, ebx
         MOV eax, ball.speedx
         NEG eax
         MOV ball.speedx, eax
+
+        MOV should_play_beep, TRUE
     .ENDIF
 
     .IF ball.y < Y_MAX_LIMIT+BALL_WD/2
@@ -213,6 +244,8 @@ CheckCollisions proc
         MOV eax, ball.speedy
         NEG eax
         MOV ball.speedy, eax
+
+        MOV should_play_beep, TRUE
     .ENDIF
 
     MOV eax, platform.x
@@ -233,6 +266,12 @@ CheckCollisions proc
                     MOV eax, ball.speedy
                     NEG eax
                     MOV ball.speedy, eax
+
+                    .IF maxrow < 2
+                        MOV should_play_beep, TRUE
+                    .ELSEIF
+                        MOV should_play_long_beep, TRUE
+                    .ENDIF
                 .ENDIF
             .ENDIF
         .ENDIF
@@ -260,6 +299,8 @@ CheckCollisions proc
                         .IF eax <= edx
                             MOV BYTE PTR [esi + 8], TRUE
 
+                            MOV should_play_plop, TRUE
+
                             MOV eax, row_index
                             .IF eax < maxrow
                                 MOV maxrow, eax
@@ -286,6 +327,7 @@ CheckRestart proc
     .IF eax > WIN_HT
         ;INVOKE wsprintf, ADDR buffer, ADDR format, 0
         ;INVOKE MessageBox, 0, ADDR buffer, ADDR header_msg, 0
+        MOV should_play_game_over, TRUE
         INVOKE Initialize
     .ENDIF
 
@@ -331,7 +373,7 @@ Initialize proc
         .ENDW
         INC row_index
     .ENDW
-
+    MOV should_play_starting, TRUE
     RET
 Initialize endp
 
@@ -437,7 +479,7 @@ DrawBall proc _hDC:DWORD, _hMemDC:DWORD
 DrawBall endp
 
 GameHandler proc Param:dword 
-    INVOKE WaitForSingleObject, hEventStart, 45
+    INVOKE WaitForSingleObject, hGameEventStart, 45
 
     .IF eax == WAIT_TIMEOUT
             INVOKE PostMessage, hWnd, WM_UPDATE, NULL, NULL   
@@ -448,5 +490,32 @@ GameHandler proc Param:dword
     JMP GameHandler
     RET
 GameHandler endp
+
+SoundHandler proc Param:dword 
+    INVOKE WaitForSingleObject, hSoundEventStart, 45
+
+    .IF eax == WAIT_TIMEOUT
+            .IF should_play_beep == TRUE
+                INVOKE PlaySound, OFFSET beep, NULL, SND_FILENAME
+                MOV should_play_beep, FALSE
+            .ELSEIF should_play_plop == TRUE
+                INVOKE PlaySound, OFFSET plop, NULL, SND_FILENAME
+                MOV should_play_plop, FALSE
+            .ELSEIF should_play_long_beep == TRUE
+                INVOKE PlaySound, OFFSET long_beep, NULL, SND_FILENAME
+                MOV should_play_long_beep, FALSE
+            .ELSEIF should_play_game_over == TRUE
+                INVOKE PlaySound, OFFSET game_over, NULL, SND_FILENAME
+                MOV should_play_game_over, FALSE
+            .ELSEIF should_play_starting == TRUE
+                INVOKE PlaySound, OFFSET starting, NULL, SND_FILENAME
+                MOV should_play_starting, FALSE
+            .ENDIF
+    .ELSEIF eax == WAIT_OBJECT_0
+    .ENDIF
+
+    JMP SoundHandler
+    RET
+SoundHandler endp
 
 end start
