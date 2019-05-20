@@ -83,6 +83,8 @@ block_obj ends
     BALL_BMP equ 102
     PLAYER_BMP equ 103
 
+    BUFFER_SIZE equ 64000
+
 ;=================
 ;      Data
 ;=================
@@ -130,3 +132,7 @@ MovePlayer proto ;Atualiza a posição de um ator
 MoveBall proto ;Atualiza a posição de um ator
 
 CheckCollisions proto
+
+CheckRestart proto
+
+Initialize proto
