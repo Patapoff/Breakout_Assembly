@@ -168,7 +168,11 @@ LoadAssets proc ; Carrega os bitmaps e matriz de blocos do jogo:
     INVOKE LoadBitmap, hInstance, PLAYER_BMP
     MOV    hPlayerBmp, eax
 
-    
+    INVOKE LoadBitmap, hInstance, GAME_OVER_BMP
+    MOV    hGame_OverBmp, eax
+
+    INVOKE LoadBitmap, hInstance, STARTING_BMP
+    MOV    hStartingBmp, eax
 
     RET
 LoadAssets endp
@@ -189,8 +193,9 @@ UpdateScreen proc _hWnd:HWND
         INVOKE DrawPlayer, hDC, hMemDC
         INVOKE DrawBall, hDC, hMemDC
     .ELSEIF should_play_game_over
+        INVOKE DrawGameOver, hDC, hMemDC
     .ELSEIF should_play_starting
-        INVOKE DrawBackground, hDC, hMemDC
+        INVOKE DrawStarting, hDC, hMemDC
     .ENDIF
     
     INVOKE DeleteDC, hMemDC
@@ -418,6 +423,20 @@ DrawBackground proc _hDC:DWORD, _hMemDC:DWORD
 
     RET
 DrawBackground endp
+
+DrawGameOver proc _hDC:DWORD, _hMemDC:DWORD
+    INVOKE SelectObject, _hMemDC, hGame_OverBmp
+    INVOKE BitBlt, _hDC, 0, 0, WIN_WD, WIN_HT, _hMemDC, 0, 0, SRCCOPY
+
+    RET
+DrawGameOver endp
+
+DrawStarting proc _hDC:DWORD, _hMemDC:DWORD
+    INVOKE SelectObject, _hMemDC, hStartingBmp
+    INVOKE BitBlt, _hDC, 0, 0, WIN_WD, WIN_HT, _hMemDC, 0, 0, SRCCOPY
+
+    RET
+DrawStarting endp
 
 DrawPlayer proc _hDC:DWORD, _hMemDC:DWORD
     INVOKE SelectObject, _hMemDC, hPlayerBmp

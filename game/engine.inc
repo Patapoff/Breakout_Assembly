@@ -85,6 +85,9 @@ block_obj ends
     CELLS_BMP equ 101
     BALL_BMP equ 102
     PLAYER_BMP equ 103
+    GAME_OVER_BMP equ 104
+    STARTING_BMP equ 105
+
 
     BUFFER_SIZE equ 64000
 
@@ -114,6 +117,8 @@ hBackgroundBmp DWORD ?
 hCellsBmp DWORD ?
 hBallBmp DWORD ?
 hPlayerBmp DWORD ?
+hGame_OverBmp DWORD ?
+hStartingBmp DWORD ?
 
 ;=================
 ; prototypes
@@ -137,6 +142,10 @@ DrawPlayer PROTO : DWORD, : DWORD ; Desenha o jogador
 DrawBall PROTO : DWORD, : DWORD ; Desenha a bola
 
 DrawBlocks PROTO : DWORD, : DWORD ; Desenha a bola
+
+DrawGameOver PROTO : DWORD, : DWORD ; Desenha a tela de game over
+
+DrawStarting proto : Dword, : DWORD  ; 
 
 MovePlayer proto ;Atualiza a posição de um ator
 
