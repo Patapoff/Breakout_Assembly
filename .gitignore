@@ -1,7 +1,0 @@
-*.o
-*.obj
-*.exe
-
-game/*.o
-game/*.obj
-game/*.exe

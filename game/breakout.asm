@@ -226,9 +226,12 @@ CheckCollisions proc
     LOCAL pos_x:DWORD
     LOCAL pos_y:DWORD
 
-    MOV edx, X_MIN_LIMIT+BALL_WD/2
-    MOV ebx, X_MAX_LIMIT-BALL_WD/2
-    .IF ball.x < edx
+    LOCAL bloco_plataforma:DWORD ; variavel para definir em que parte da plataforma bateu
+   
+    MOV edx, X_MIN_LIMIT + BALL_WD/2  ;   limite da esquerda
+    MOV ebx, X_MAX_LIMIT - BALL_WD/2  ;   limite da direita
+
+    .IF ball.x < edx    ;   quer dizer que houve colisao, inverte a velocidade x e volta a posicao para o limite
         MOV ball.x, edx
         MOV eax, ball.speedx
         NEG eax
@@ -243,9 +246,11 @@ CheckCollisions proc
 
         MOV should_play_beep, TRUE
     .ENDIF
+    
+    MOV ebx, Y_MIN_LIMIT + BALL_WD/2   ;   limite de cima
 
-    .IF ball.y < Y_MAX_LIMIT+BALL_WD/2
-        MOV ball.y, Y_MAX_LIMIT+BALL_WD/2
+    .IF ball.y < ebx    ;   quer dizer que houve colisao, inverte velocidade y e volta a posicao para o limite
+        MOV ball.y, ebx
         MOV eax, ball.speedy
         NEG eax
         MOV ball.speedy, eax
@@ -253,34 +258,165 @@ CheckCollisions proc
         MOV should_play_beep, TRUE
     .ENDIF
 
+    ;0 = fora, de 1 a 5 indo da esquerda pra direita
+    XOR eax, eax
+    MOV bloco_plataforma, eax ; coloca em 0
+
+    ;coloca o limite esquerdo da plataforma no registrador
     MOV eax, platform.x
     SUB eax, PLAYER_WD/2
     SUB eax, BALL_WD/2
+
     .IF ball.x >= eax
-        MOV eax, platform.x
-        ADD eax, PLAYER_WD/2
-        ADD eax, BALL_WD/2
-        .IF ball.x <= eax
+
+        ADD eax, PLAYER_WD/5
+        ADD eax, BALL_WD/5
+
+        .IF ball.x >= eax
+
+            ADD eax, PLAYER_WD/5
+            ADD eax, BALL_WD/5
+
+            .IF ball.x >= eax
+
+                ADD eax, PLAYER_WD/5
+                ADD eax, BALL_WD/5
+
+                .IF ball.x >= eax
+
+                    ADD eax, PLAYER_WD/5
+                    ADD eax, BALL_WD/5
+
+                    .IF ball.x >= eax
+
+                        ADD eax, PLAYER_WD/5
+                        ADD eax, BALL_WD/5
+
+                        .IF ball.x <= eax                                                                                
+                            MOV bloco_plataforma, 5
+                        .ENDIF  ;   se chegar aqui eh pq ele nao esta na plataforma
+                    .ELSE
+                        MOV bloco_plataforma, 4
+                    .ENDIF
+
+                .ELSE
+                    MOV bloco_plataforma, 3
+                .ENDIF
+
+            .ELSE   ;   quer dizer que esta no segundo bloco da plataforma
+
+                MOV bloco_plataforma, 2
+
+            .ENDIF
+
+        .ELSE   ;   quer dizer q esta no primeiro bloco da plataforma
+
+            MOV bloco_plataforma, 1
+
+        .ENDIF
+
+    .ENDIF
+
+    .IF !(bloco_plataforma == 0) ; checa se eh possivel ter colisao
+        ;coloca o limite de cima de plataforma no registrador
             MOV eax, platform.y
             SUB eax, BALL_WD/2
+
             .IF ball.y >= eax
                 MOV eax, platform.y
                 ADD eax, 2
                 ADD eax, BALL_WD/2
-                .IF ball.y <= eax
+
+                .IF ball.y <= eax   ;   quer dizer que houve colisao com a plataforma
+
+                    ;em todos os casos se inverte a velocidade vertical
                     MOV eax, ball.speedy
                     NEG eax
                     MOV ball.speedy, eax
 
-                    .IF maxrow < 2
-                        MOV should_play_beep, TRUE
-                    .ELSEIF
-                        MOV should_play_long_beep, TRUE
+                     ; calcula a velocidade para ser o número de rows quebradas * 2
+                    MOV eax, 5
+                    SUB eax, maxrow
+                    MOV edx, 2
+                    MUL edx
+
+                    .IF bloco_plataforma == 1
+                                               
+                        ;   se move bastante para a esquerda
+                        MOV ball.speedy, -9
+                        NEG eax
+                        SUB eax, 18
+                        MOV ball.speedx, eax                                                                                                        
+
+                    .ELSEIF bloco_plataforma == 2
+
+                        ;   se move um pouco para a esquerda
+                        MOV ball.speedy, -9
+                        NEG eax
+                        SUB eax, 9
+                        MOV ball.speedx, eax                        
+
+                    .ELSEIF bloco_plataforma == 3
+                        
+                        ;   a bola vai para cima
+                        MOV ball.speedy, -18
+                        MOV ball.speedx, 0
+
+                    .ELSEIF bloco_plataforma == 4
+
+                        ;se move um pouco para a direita
+                        MOV ball.speedy, -9
+                        ADD eax, 9                    
+                        MOV ball.speedx, eax
+
+                    .ELSE 
+
+                        ;se move bastante para a direita
+                        MOV ball.speedy, -9
+                        ADD eax, 18                        
+                        MOV ball.speedx, eax        
+
                     .ENDIF
+                    
                 .ENDIF
             .ENDIF
-        .ENDIF
     .ENDIF
+
+;    .IF ball.x >= eax
+
+        ;coloca o limite direito da plataforma no registrador
+;        MOV eax, platform.x
+;        ADD eax, PLAYER_WD/2
+;        ADD eax, BALL_WD/2
+
+;        .IF ball.x <= eax ; quer dizer que está no mesmo x da plataforma
+
+            ;coloca o limite de cima de plataforma no registrador
+;            MOV eax, platform.y
+;            SUB eax, BALL_WD/2
+
+;            .IF ball.y >= eax
+
+                ;coloca o limite de baixo da plataforma no registrador
+;                MOV eax, platform.y
+;                ADD eax, 2
+;                ADD eax, BALL_WD/2
+
+;                .IF ball.y <= eax   ;   quer dizer que houve colisao com a plataforma
+
+;                    MOV eax, ball.speedy
+;                    NEG eax
+;                  MOV ball.speedy, eax
+
+ ;                   .IF maxrow < 2
+ ;                       MOV should_play_beep, TRUE
+ ;                   .ELSEIF
+ ;                       MOV should_play_long_beep, TRUE
+ ;                   .ENDIF
+ ;               .ENDIF
+ ;           .ENDIF
+ ;       .ENDIF
+ ;   .ENDIF
 
     MOV esi, offset blocks
     MOV row_index, 0
@@ -292,25 +428,31 @@ CheckCollisions proc
             MOV eax, DWORD PTR [esi + 4]
             MOV pos_y, eax
 
-            MOV eax, ball.x
-            MOV edx, pos_x
-            .IF eax >= edx
-                ADD edx, CELL_WD
-                .IF eax <= edx
-                    MOV eax, ball.y
-                    MOV edx, pos_y
-                    .IF eax >= edx
-                        ADD edx, CELL_HT
-                        .IF eax <= edx
-                            MOV BYTE PTR [esi + 8], TRUE
+            .IF BYTE PTR [esi + 8] == FALSE
+                MOV eax, ball.x
+                MOV edx, pos_x
+                .IF eax >= edx
+                    ADD edx, CELL_WD
+                    .IF eax <= edx
+                        MOV eax, ball.y
+                        MOV edx, pos_y
+                        .IF eax >= edx
+                            ADD edx, CELL_HT
+                            .IF eax <= edx
+                                MOV BYTE PTR [esi + 8], TRUE
 
-                            MOV should_play_plop, TRUE
+                                MOV eax, ball.speedy
+                                NEG eax
+                                MOV ball.speedy, eax
 
-                            MOV eax, row_index
-                            .IF eax < maxrow
-                                MOV maxrow, eax
-                                ADD ball.speedx, -2
-                                ADD ball.speedy, -2
+                                MOV should_play_plop, TRUE
+
+                                MOV eax, row_index
+                                .IF eax < maxrow
+                                    MOV maxrow, eax
+                                    ;ADD ball.speedx, -2
+                                    ;ADD ball.speedy, -2
+                                .ENDIF
                             .ENDIF
                         .ENDIF
                     .ENDIF

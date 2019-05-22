@@ -68,7 +68,7 @@ block_obj ends
 
     X_MIN_LIMIT equ 60
     X_MAX_LIMIT equ 1140
-    Y_MAX_LIMIT equ 109
+    Y_MIN_LIMIT equ 109
 
     BALL_WD equ 15
     CELL_WD equ 60
