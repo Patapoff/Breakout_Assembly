@@ -42,7 +42,7 @@ WinCreate proc hInst:HINSTANCE, CmdShow:DWORD
     PUSH   hInstance 
     POP    wc.hInstance 
 
-    MOV    wc.hbrBackground, COLOR_WINDOW+3
+    MOV    wc.hbrBackground, NULL
     MOV    wc.lpszMenuName, NULL 
     MOV    wc.lpszClassName, OFFSET ClassName 
 
@@ -181,24 +181,38 @@ UpdateScreen proc _hWnd:HWND
     LOCAL  ps:PAINTSTRUCT 
     LOCAL  hDC:HDC 
     LOCAL  hMemDC:HDC 
+    LOCAL  hMemDCTwo:HDC 
+    LOCAL  hBitmap:HDC 
 
     INVOKE BeginPaint, _hWnd, ADDR ps
     MOV    hDC, eax
     INVOKE CreateCompatibleDC, hDC
     MOV    hMemDC, eax
+    INVOKE CreateCompatibleDC, hDC
+    MOV    hMemDCTwo, eax
+    INVOKE CreateCompatibleBitmap, hDC, WIN_WD, WIN_HT
+    MOV    hBitmap, eax
+
+    INVOKE SelectObject, hMemDC, hBitmap
+
+    INVOKE DrawBackground, hMemDC, hMemDCTwo
 
     .IF !(should_play_game_over || should_play_starting)
-        INVOKE DrawBackground, hDC, hMemDC
-        INVOKE DrawBlocks, hDC, hMemDC
-        INVOKE DrawPlayer, hDC, hMemDC
-        INVOKE DrawBall, hDC, hMemDC
+        
+        INVOKE DrawBlocks, hMemDC, hMemDCTwo
+        INVOKE DrawPlayer, hMemDC, hMemDCTwo
+        INVOKE DrawBall, hMemDC, hMemDCTwo
     .ELSEIF should_play_game_over
-        INVOKE DrawGameOver, hDC, hMemDC
+        INVOKE DrawGameOver, hMemDC, hMemDCTwo
     .ELSEIF should_play_starting
-        INVOKE DrawStarting, hDC, hMemDC
+        INVOKE DrawStarting, hMemDC, hMemDCTwo
     .ENDIF
     
+    INVOKE BitBlt, hDC, 0, 0, WIN_WD, WIN_HT, hMemDC, 0, 0, SRCCOPY
+
     INVOKE DeleteDC, hMemDC
+    INVOKE DeleteDC, hMemDCTwo
+    INVOKE DeleteObject, hBitmap
     INVOKE EndPaint, _hWnd, addr ps
 
     RET
@@ -328,7 +342,7 @@ CheckCollisions proc
                 ADD eax, BALL_WD/2
 
                 .IF ball.y <= eax   ;   quer dizer que houve colisao com a plataforma
-
+                    MOV should_play_beep, TRUE
                     ;em todos os casos se inverte a velocidade vertical
                     MOV eax, ball.speedy
                     NEG eax
@@ -349,7 +363,7 @@ CheckCollisions proc
                         MOV ball.speedx, eax                                                                                                        
 
                     .ELSEIF bloco_plataforma == 2
-
+                        
                         ;   se move um pouco para a esquerda
                         MOV ball.speedy, -9
                         NEG eax
@@ -363,14 +377,14 @@ CheckCollisions proc
                         MOV ball.speedx, 0
 
                     .ELSEIF bloco_plataforma == 4
-
+                        
                         ;se move um pouco para a direita
                         MOV ball.speedy, -9
                         ADD eax, 9                    
                         MOV ball.speedx, eax
 
                     .ELSE 
-
+                        
                         ;se move bastante para a direita
                         MOV ball.speedy, -9
                         ADD eax, 18                        
@@ -445,7 +459,7 @@ CheckCollisions proc
                                 NEG eax
                                 MOV ball.speedy, eax
 
-                                MOV should_play_plop, TRUE
+                                MOV should_play_beep, TRUE
 
                                 MOV eax, row_index
                                 .IF eax < maxrow
@@ -559,38 +573,38 @@ MovePlayer proc ; Atualiza a posição de um ator de acordo com sua velocidade
     RET
 MovePlayer endp
 
-DrawBackground proc _hDC:DWORD, _hMemDC:DWORD
-    INVOKE SelectObject, _hMemDC, hBackgroundBmp
-    INVOKE BitBlt, _hDC, 0, 0, WIN_WD, WIN_HT, _hMemDC, 0, 0, SRCCOPY
+DrawBackground proc _hMemDC:DWORD, _hMemDCTwo:DWORD
+    INVOKE SelectObject, _hMemDCTwo, hBackgroundBmp
+    INVOKE BitBlt, _hMemDC, 0, 0, WIN_WD, WIN_HT, _hMemDCTwo, 0, 0, SRCCOPY
 
     RET
 DrawBackground endp
 
-DrawGameOver proc _hDC:DWORD, _hMemDC:DWORD
-    INVOKE SelectObject, _hMemDC, hGame_OverBmp
-    INVOKE BitBlt, _hDC, 0, 0, WIN_WD, WIN_HT, _hMemDC, 0, 0, SRCCOPY
+DrawGameOver proc _hMemDC:DWORD, _hMemDCTwo:DWORD
+    INVOKE SelectObject, _hMemDCTwo, hGame_OverBmp
+    INVOKE BitBlt, _hMemDC, 0, 0, WIN_WD, WIN_HT, _hMemDCTwo, 0, 0, SRCCOPY
 
     RET
 DrawGameOver endp
 
-DrawStarting proc _hDC:DWORD, _hMemDC:DWORD
-    INVOKE SelectObject, _hMemDC, hStartingBmp
-    INVOKE BitBlt, _hDC, 0, 0, WIN_WD, WIN_HT, _hMemDC, 0, 0, SRCCOPY
+DrawStarting proc _hMemDC:DWORD, _hMemDCTwo:DWORD
+    INVOKE SelectObject, _hMemDCTwo, hStartingBmp
+    INVOKE BitBlt, _hMemDC, 0, 0, WIN_WD, WIN_HT, _hMemDCTwo, 0, 0, SRCCOPY
 
     RET
 DrawStarting endp
 
-DrawPlayer proc _hDC:DWORD, _hMemDC:DWORD
-    INVOKE SelectObject, _hMemDC, hPlayerBmp
+DrawPlayer proc _hMemDC:DWORD, _hMemDCTwo:DWORD
+    INVOKE SelectObject, _hMemDCTwo, hPlayerBmp
     MOV eax, platform.x
     MOV ebx, platform.y
     SUB eax, PLAYER_WD/2
-    INVOKE BitBlt, _hDC, eax, ebx, PLAYER_WD, PLAYER_HT, _hMemDC, 0, 0, SRCCOPY
+    INVOKE BitBlt, _hMemDC, eax, ebx, PLAYER_WD, PLAYER_HT, _hMemDCTwo, 0, 0, SRCCOPY
 
     RET
 DrawPlayer endp
 
-DrawBlocks proc _hDC:DWORD, _hMemDC:DWORD
+DrawBlocks proc _hMemDC:DWORD, _hMemDCTwo:DWORD
     LOCAL row_index:DWORD
     LOCAL column_index:DWORD
 
@@ -599,7 +613,7 @@ DrawBlocks proc _hDC:DWORD, _hMemDC:DWORD
 
     LOCAL sprite_offset:DWORD
 
-    INVOKE SelectObject, _hMemDC, hCellsBmp
+    INVOKE SelectObject, _hMemDCTwo, hCellsBmp
 
     MOV esi, offset blocks
     MOV row_index, 0
@@ -616,7 +630,7 @@ DrawBlocks proc _hDC:DWORD, _hMemDC:DWORD
                 MOV eax, DWORD PTR [esi + 4]
                 MOV pos_y, eax
 
-                INVOKE BitBlt, _hDC, pos_x, pos_y, CELL_WD, CELL_HT, _hMemDC, 0, sprite_offset, SRCCOPY
+                INVOKE BitBlt, _hMemDC, pos_x, pos_y, CELL_WD, CELL_HT, _hMemDCTwo, 0, sprite_offset, SRCCOPY
             .ENDIF
 
             ADD esi, BLOCK_SIZE
@@ -628,13 +642,13 @@ DrawBlocks proc _hDC:DWORD, _hMemDC:DWORD
     RET
 DrawBlocks endp
 
-DrawBall proc _hDC:DWORD, _hMemDC:DWORD
-    INVOKE SelectObject, _hMemDC, hBallBmp
+DrawBall proc _hMemDC:DWORD, _hMemDCTwo:DWORD
+    INVOKE SelectObject, _hMemDCTwo, hBallBmp
     MOV eax, ball.x
     MOV ebx, ball.y
     SUB eax, BALL_WD/2
     SUB ebx, BALL_WD/2
-    INVOKE BitBlt, _hDC, eax, ebx, BALL_WD, BALL_WD, _hMemDC, 0, 0, SRCCOPY
+    INVOKE BitBlt, _hMemDC, eax, ebx, BALL_WD, BALL_WD, _hMemDCTwo, 0, 0, SRCCOPY
 
     RET
 DrawBall endp

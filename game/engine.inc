@@ -82,11 +82,11 @@ block_obj ends
     ICON equ 500
 
     BACKGROUND_BMP equ 100
-    CELLS_BMP equ 101
-    BALL_BMP equ 102
-    PLAYER_BMP equ 103
-    GAME_OVER_BMP equ 104
-    STARTING_BMP equ 105
+    CELLS_BMP      equ 101
+    BALL_BMP       equ 102
+    PLAYER_BMP     equ 103
+    GAME_OVER_BMP  equ 104
+    STARTING_BMP   equ 105
 
 
     BUFFER_SIZE equ 64000
