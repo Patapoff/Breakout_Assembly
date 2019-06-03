@@ -88,6 +88,7 @@ block_obj ends
     GAME_OVER_BMP  equ 104
     MENU_BMP       equ 105
     STARTING_BMP   equ 106
+    YOU_WIN_BMP    equ 107
 
 
     BUFFER_SIZE equ 64000
@@ -104,6 +105,7 @@ game_over db "assets/sounds/game_over.wav", 0
 beep      db "assets/sounds/beep.wav", 0
 long_beep db "assets/sounds/long_beep.wav", 0
 plop      db "assets/sounds/plop.wav", 0
+you_win   db "assets/sounds/you_win.wav", 0
 
 
 .data?                
@@ -121,6 +123,7 @@ hPlayerBmp DWORD ?
 hGame_OverBmp DWORD ?
 hMenuBmp DWORD ?
 hStartingBmp DWORD ?
+hYouWinBmp DWORD ?
 
 ;=================
 ; prototypes
@@ -149,7 +152,9 @@ DrawGameOver PROTO : DWORD, : DWORD ; Desenha a tela de game over
 
 DrawMenu proto : DWORD, : DWORD  ; 
 
-DrawStarting proto : BYTE, : DWORD, : DWORD  ; 
+DrawStarting proto : BYTE, : DWORD, : DWORD  ;
+
+DrawYouWin proto :  DWORD, : DWORD  ;
 
 MovePlayer proto ;Atualiza a posição de um ator
 

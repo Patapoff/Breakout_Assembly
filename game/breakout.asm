@@ -24,6 +24,7 @@ include engine.inc
 
     should_play_starting db FALSE
     should_play_game_over db FALSE
+    should_play_you_win db FALSE
 
 .code 
 start:
@@ -180,6 +181,9 @@ LoadAssets proc ; Carrega os bitmaps e matriz de blocos do jogo:
     INVOKE LoadBitmap, hInstance, STARTING_BMP
     MOV    hStartingBmp, eax
 
+    INVOKE LoadBitmap, hInstance, YOU_WIN_BMP
+    MOV    hYouWinBmp, eax
+
     RET
 LoadAssets endp
 
@@ -204,6 +208,8 @@ UpdateScreen proc _hWnd:HWND
     .IF should_run_game == TRUE
         .IF should_play_game_over == TRUE
             INVOKE DrawGameOver, hMemDC, hVirtualMemDC
+        .ELSEIF should_play_you_win == TRUE
+            INVOKE DrawYouWin, hMemDC, hVirtualMemDC
         .ELSEIF should_play_starting == TRUE
             INVOKE DrawStarting, starting_image, hMemDC, hVirtualMemDC
         .ELSE
@@ -363,7 +369,7 @@ CheckCollisions proc
                     SUB eax, maxrow
                     MOV edx, 2
                     MUL edx
-
+                    
                     .IF bloco_plataforma == 1
                                                
                         ;   se move bastante para a esquerda
@@ -486,6 +492,7 @@ CheckCollisions proc
         .ENDW
         INC row_index
     .ENDW
+    
 
     RET
 CheckCollisions endp
@@ -579,6 +586,13 @@ MovePlayer proc ; Atualiza a posição de um ator de acordo com sua velocidade
 
     RET
 MovePlayer endp
+
+DrawYouWin proc _hMemDC:DWORD, _hVirtualMemDC:DWORD
+    INVOKE SelectObject, _hVirtualMemDC, hYouWinBmp
+    INVOKE BitBlt, _hMemDC, 0, 0, WIN_WD, WIN_HT, _hVirtualMemDC, 0, 0, SRCCOPY
+    RET
+DrawYouWin endp
+
 
 DrawBackground proc _hMemDC:DWORD, _hVirtualMemDC:DWORD
     INVOKE SelectObject, _hVirtualMemDC, hBackgroundBmp
@@ -684,7 +698,7 @@ GameHandler proc Param:dword
 GameHandler endp
 
 SoundHandler proc Param:dword 
-    INVOKE WaitForSingleObject, hSoundEventStart, 30
+    INVOKE WaitForSingleObject, hSoundEventStart, 60
 
     .IF eax == WAIT_TIMEOUT
         .IF should_play_beep == TRUE
@@ -697,8 +711,11 @@ SoundHandler proc Param:dword
             INVOKE PlaySound, OFFSET long_beep, NULL, SND_FILENAME
             MOV should_play_long_beep, FALSE
         .ELSEIF should_play_game_over == TRUE
-            INVOKE PlaySound, OFFSET game_over, NULL, SND_FILENAME
             MOV should_play_game_over, FALSE
+            INVOKE PlaySound, OFFSET game_over, NULL, SND_FILENAME
+        .ELSEIF should_play_you_win == TRUE
+            INVOKE PlaySound, OFFSET you_win, NULL, SND_FILENAME
+            MOV should_play_you_win, FALSE
         .ELSEIF should_play_starting == TRUE
             INVOKE PlaySound, OFFSET starting, NULL, SND_FILENAME
             MOV should_play_starting, FALSE
