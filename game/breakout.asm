@@ -14,9 +14,14 @@ include engine.inc
     blocks block_obj 108 dup(<?, ?, ?>)
     maxrow dd ?
 
+    starting_image db 0
+
+    should_run_game db FALSE
+
     should_play_beep db FALSE
     should_play_long_beep db FALSE
     should_play_plop db FALSE
+
     should_play_starting db FALSE
     should_play_game_over db FALSE
 
@@ -96,14 +101,12 @@ WndProc proc _hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         INVOKE LoadAssets
         INVOKE Initialize
 
-
         INVOKE CreateEvent, NULL, FALSE, FALSE, NULL
 		MOV    hGameEventStart, eax
 
         MOV eax, OFFSET GameHandler
         INVOKE CreateThread, NULL, NULL, eax, 0, 0, ADDR GameHandlerID  ; Cria a thread principal
         INVOKE CloseHandle, eax
-
 
         INVOKE CreateEvent, NULL, FALSE, FALSE, NULL
 		MOV    hSoundEventStart, eax
@@ -112,12 +115,12 @@ WndProc proc _hWnd:HWND, uMsg:UINT, wParam:WPARAM, lParam:LPARAM
         INVOKE CreateThread, NULL, NULL, eax, 0, 0, ADDR SoundHandlerID  ; Cria a thread principal
         INVOKE CloseHandle, eax
 
-        ;INVOKE wsprintf, ADDR buffer, ADDR format, 0
-        ;INVOKE MessageBox, 0, ADDR buffer, ADDR header_msg, 0
-
     .ELSEIF uMsg == WM_KEYDOWN
 
-        .IF (wParam == VK_LEFT)
+        .IF (wParam == VK_RETURN)
+            mov should_run_game, TRUE
+            MOV should_play_starting, TRUE
+        .ELSEIF (wParam == VK_LEFT)
            mov platform.speedx, -SPEED
         .ELSEIF (wParam == VK_RIGHT)
             mov platform.speedx, SPEED
@@ -171,6 +174,9 @@ LoadAssets proc ; Carrega os bitmaps e matriz de blocos do jogo:
     INVOKE LoadBitmap, hInstance, GAME_OVER_BMP
     MOV    hGame_OverBmp, eax
 
+    INVOKE LoadBitmap, hInstance, MENU_BMP
+    MOV    hMenuBmp, eax
+
     INVOKE LoadBitmap, hInstance, STARTING_BMP
     MOV    hStartingBmp, eax
 
@@ -181,7 +187,7 @@ UpdateScreen proc _hWnd:HWND
     LOCAL  ps:PAINTSTRUCT 
     LOCAL  hDC:HDC 
     LOCAL  hMemDC:HDC 
-    LOCAL  hMemDCTwo:HDC 
+    LOCAL  hVirtualMemDC:HDC 
     LOCAL  hBitmap:HDC 
 
     INVOKE BeginPaint, _hWnd, ADDR ps
@@ -189,29 +195,31 @@ UpdateScreen proc _hWnd:HWND
     INVOKE CreateCompatibleDC, hDC
     MOV    hMemDC, eax
     INVOKE CreateCompatibleDC, hDC
-    MOV    hMemDCTwo, eax
+    MOV    hVirtualMemDC, eax
     INVOKE CreateCompatibleBitmap, hDC, WIN_WD, WIN_HT
     MOV    hBitmap, eax
 
     INVOKE SelectObject, hMemDC, hBitmap
 
-    INVOKE DrawBackground, hMemDC, hMemDCTwo
-
-    .IF !(should_play_game_over || should_play_starting)
-        
-        INVOKE DrawBlocks, hMemDC, hMemDCTwo
-        INVOKE DrawPlayer, hMemDC, hMemDCTwo
-        INVOKE DrawBall, hMemDC, hMemDCTwo
-    .ELSEIF should_play_game_over
-        INVOKE DrawGameOver, hMemDC, hMemDCTwo
-    .ELSEIF should_play_starting
-        INVOKE DrawStarting, hMemDC, hMemDCTwo
+    .IF should_run_game == TRUE
+        .IF should_play_game_over == TRUE
+            INVOKE DrawGameOver, hMemDC, hVirtualMemDC
+        .ELSEIF should_play_starting == TRUE
+            INVOKE DrawStarting, starting_image, hMemDC, hVirtualMemDC
+        .ELSE
+            INVOKE DrawBackground, hMemDC, hVirtualMemDC
+            INVOKE DrawBlocks, hMemDC, hVirtualMemDC
+            INVOKE DrawPlayer, hMemDC, hVirtualMemDC
+            INVOKE DrawBall, hMemDC, hVirtualMemDC
+        .ENDIF
+    .ELSE
+        INVOKE DrawMenu, hMemDC, hVirtualMemDC 
     .ENDIF
     
     INVOKE BitBlt, hDC, 0, 0, WIN_WD, WIN_HT, hMemDC, 0, 0, SRCCOPY
 
     INVOKE DeleteDC, hMemDC
-    INVOKE DeleteDC, hMemDCTwo
+    INVOKE DeleteDC, hVirtualMemDC
     INVOKE DeleteObject, hBitmap
     INVOKE EndPaint, _hWnd, addr ps
 
@@ -219,18 +227,20 @@ UpdateScreen proc _hWnd:HWND
 UpdateScreen endp
 
 UpdatePhysics proc
-    .IF !(should_play_game_over || should_play_starting)
-        INVOKE CheckRestart
+    .IF should_run_game == TRUE
+        .IF !(should_play_game_over || should_play_starting)
+            INVOKE CheckRestart
 
-        INVOKE MovePlayer
-        INVOKE MoveBall
+            INVOKE MovePlayer
+            INVOKE MoveBall
 
-        INVOKE CheckCollisions
+            INVOKE CheckCollisions
 
-        INVOKE InvalidateRect, hWnd, NULL, TRUE
-
-        RET
+            INVOKE InvalidateRect, hWnd, NULL, TRUE
+        .ENDIF
     .ENDIF
+
+    RET
 UpdatePhysics endp
 
 CheckCollisions proc
@@ -396,41 +406,41 @@ CheckCollisions proc
             .ENDIF
     .ENDIF
 
-;    .IF ball.x >= eax
+    ;    .IF ball.x >= eax
 
-        ;coloca o limite direito da plataforma no registrador
-;        MOV eax, platform.x
-;        ADD eax, PLAYER_WD/2
-;        ADD eax, BALL_WD/2
+            ;coloca o limite direito da plataforma no registrador
+    ;        MOV eax, platform.x
+    ;        ADD eax, PLAYER_WD/2
+    ;        ADD eax, BALL_WD/2
 
-;        .IF ball.x <= eax ; quer dizer que está no mesmo x da plataforma
+    ;        .IF ball.x <= eax ; quer dizer que está no mesmo x da plataforma
 
-            ;coloca o limite de cima de plataforma no registrador
-;            MOV eax, platform.y
-;            SUB eax, BALL_WD/2
+                ;coloca o limite de cima de plataforma no registrador
+    ;            MOV eax, platform.y
+    ;            SUB eax, BALL_WD/2
 
-;            .IF ball.y >= eax
+    ;            .IF ball.y >= eax
 
-                ;coloca o limite de baixo da plataforma no registrador
-;                MOV eax, platform.y
-;                ADD eax, 2
-;                ADD eax, BALL_WD/2
+                    ;coloca o limite de baixo da plataforma no registrador
+    ;                MOV eax, platform.y
+    ;                ADD eax, 2
+    ;                ADD eax, BALL_WD/2
 
-;                .IF ball.y <= eax   ;   quer dizer que houve colisao com a plataforma
+    ;                .IF ball.y <= eax   ;   quer dizer que houve colisao com a plataforma
 
-;                    MOV eax, ball.speedy
-;                    NEG eax
-;                  MOV ball.speedy, eax
+    ;                    MOV eax, ball.speedy
+    ;                    NEG eax
+    ;                  MOV ball.speedy, eax
 
- ;                   .IF maxrow < 2
- ;                       MOV should_play_beep, TRUE
- ;                   .ELSEIF
- ;                       MOV should_play_long_beep, TRUE
- ;                   .ENDIF
- ;               .ENDIF
- ;           .ENDIF
- ;       .ENDIF
- ;   .ENDIF
+    ;                   .IF maxrow < 2
+    ;                       MOV should_play_beep, TRUE
+    ;                   .ELSEIF
+    ;                       MOV should_play_long_beep, TRUE
+    ;                   .ENDIF
+    ;               .ENDIF
+    ;           .ENDIF
+    ;       .ENDIF
+    ;   .ENDIF
 
     MOV esi, offset blocks
     MOV row_index, 0
@@ -459,13 +469,11 @@ CheckCollisions proc
                                 NEG eax
                                 MOV ball.speedy, eax
 
-                                MOV should_play_beep, TRUE
+                                MOV should_play_plop, TRUE
 
                                 MOV eax, row_index
                                 .IF eax < maxrow
                                     MOV maxrow, eax
-                                    ;ADD ball.speedx, -2
-                                    ;ADD ball.speedy, -2
                                 .ENDIF
                             .ENDIF
                         .ENDIF
@@ -486,9 +494,9 @@ CheckRestart proc
     MOV eax, ball.y
 
     .IF eax > WIN_HT
-        ;INVOKE wsprintf, ADDR buffer, ADDR format, 0
-        ;INVOKE MessageBox, 0, ADDR buffer, ADDR header_msg, 0
         MOV should_play_game_over, TRUE
+        MOV should_play_starting, TRUE
+
         INVOKE Initialize
     .ENDIF
 
@@ -534,7 +542,6 @@ Initialize proc
         .ENDW
         INC row_index
     .ENDW
-    MOV should_play_starting, TRUE
     RET
 Initialize endp
 
@@ -573,38 +580,48 @@ MovePlayer proc ; Atualiza a posição de um ator de acordo com sua velocidade
     RET
 MovePlayer endp
 
-DrawBackground proc _hMemDC:DWORD, _hMemDCTwo:DWORD
-    INVOKE SelectObject, _hMemDCTwo, hBackgroundBmp
-    INVOKE BitBlt, _hMemDC, 0, 0, WIN_WD, WIN_HT, _hMemDCTwo, 0, 0, SRCCOPY
+DrawBackground proc _hMemDC:DWORD, _hVirtualMemDC:DWORD
+    INVOKE SelectObject, _hVirtualMemDC, hBackgroundBmp
+    INVOKE BitBlt, _hMemDC, 0, 0, WIN_WD, WIN_HT, _hVirtualMemDC, 0, 0, SRCCOPY
 
     RET
 DrawBackground endp
 
-DrawGameOver proc _hMemDC:DWORD, _hMemDCTwo:DWORD
-    INVOKE SelectObject, _hMemDCTwo, hGame_OverBmp
-    INVOKE BitBlt, _hMemDC, 0, 0, WIN_WD, WIN_HT, _hMemDCTwo, 0, 0, SRCCOPY
+DrawGameOver proc _hMemDC:DWORD, _hVirtualMemDC:DWORD
+    INVOKE SelectObject, _hVirtualMemDC, hGame_OverBmp
+    INVOKE BitBlt, _hMemDC, 0, 0, WIN_WD, WIN_HT, _hVirtualMemDC, 0, 0, SRCCOPY
 
     RET
 DrawGameOver endp
 
-DrawStarting proc _hMemDC:DWORD, _hMemDCTwo:DWORD
-    INVOKE SelectObject, _hMemDCTwo, hStartingBmp
-    INVOKE BitBlt, _hMemDC, 0, 0, WIN_WD, WIN_HT, _hMemDCTwo, 0, 0, SRCCOPY
+DrawMenu proc _hMemDC:DWORD, _hVirtualMemDC:DWORD
+    INVOKE SelectObject, _hVirtualMemDC, hMenuBmp
+    INVOKE BitBlt, _hMemDC, 0, 0, WIN_WD, WIN_HT, _hVirtualMemDC, 0, 0, SRCCOPY
+
+    RET
+DrawMenu endp
+
+DrawStarting proc image:BYTE, _hMemDC:DWORD, _hVirtualMemDC:DWORD
+    MOV eax, WIN_WD
+    MUL image
+
+    INVOKE SelectObject, _hVirtualMemDC, hStartingBmp
+    INVOKE BitBlt, _hMemDC, 0, 0, WIN_WD, WIN_HT, _hVirtualMemDC, 0, 0, SRCCOPY
 
     RET
 DrawStarting endp
 
-DrawPlayer proc _hMemDC:DWORD, _hMemDCTwo:DWORD
-    INVOKE SelectObject, _hMemDCTwo, hPlayerBmp
+DrawPlayer proc _hMemDC:DWORD, _hVirtualMemDC:DWORD
+    INVOKE SelectObject, _hVirtualMemDC, hPlayerBmp
     MOV eax, platform.x
     MOV ebx, platform.y
     SUB eax, PLAYER_WD/2
-    INVOKE BitBlt, _hMemDC, eax, ebx, PLAYER_WD, PLAYER_HT, _hMemDCTwo, 0, 0, SRCCOPY
+    INVOKE BitBlt, _hMemDC, eax, ebx, PLAYER_WD, PLAYER_HT, _hVirtualMemDC, 0, 0, SRCCOPY
 
     RET
 DrawPlayer endp
 
-DrawBlocks proc _hMemDC:DWORD, _hMemDCTwo:DWORD
+DrawBlocks proc _hMemDC:DWORD, _hVirtualMemDC:DWORD
     LOCAL row_index:DWORD
     LOCAL column_index:DWORD
 
@@ -613,7 +630,7 @@ DrawBlocks proc _hMemDC:DWORD, _hMemDCTwo:DWORD
 
     LOCAL sprite_offset:DWORD
 
-    INVOKE SelectObject, _hMemDCTwo, hCellsBmp
+    INVOKE SelectObject, _hVirtualMemDC, hCellsBmp
 
     MOV esi, offset blocks
     MOV row_index, 0
@@ -630,7 +647,7 @@ DrawBlocks proc _hMemDC:DWORD, _hMemDCTwo:DWORD
                 MOV eax, DWORD PTR [esi + 4]
                 MOV pos_y, eax
 
-                INVOKE BitBlt, _hMemDC, pos_x, pos_y, CELL_WD, CELL_HT, _hMemDCTwo, 0, sprite_offset, SRCCOPY
+                INVOKE BitBlt, _hMemDC, pos_x, pos_y, CELL_WD, CELL_HT, _hVirtualMemDC, 0, sprite_offset, SRCCOPY
             .ENDIF
 
             ADD esi, BLOCK_SIZE
@@ -642,19 +659,19 @@ DrawBlocks proc _hMemDC:DWORD, _hMemDCTwo:DWORD
     RET
 DrawBlocks endp
 
-DrawBall proc _hMemDC:DWORD, _hMemDCTwo:DWORD
-    INVOKE SelectObject, _hMemDCTwo, hBallBmp
+DrawBall proc _hMemDC:DWORD, _hVirtualMemDC:DWORD
+    INVOKE SelectObject, _hVirtualMemDC, hBallBmp
     MOV eax, ball.x
     MOV ebx, ball.y
     SUB eax, BALL_WD/2
     SUB ebx, BALL_WD/2
-    INVOKE BitBlt, _hMemDC, eax, ebx, BALL_WD, BALL_WD, _hMemDCTwo, 0, 0, SRCCOPY
+    INVOKE BitBlt, _hMemDC, eax, ebx, BALL_WD, BALL_WD, _hVirtualMemDC, 0, 0, SRCCOPY
 
     RET
 DrawBall endp
 
 GameHandler proc Param:dword 
-    INVOKE WaitForSingleObject, hGameEventStart, 45
+    INVOKE WaitForSingleObject, hGameEventStart, 30
 
     .IF eax == WAIT_TIMEOUT
             INVOKE PostMessage, hWnd, WM_UPDATE, NULL, NULL   
@@ -667,25 +684,25 @@ GameHandler proc Param:dword
 GameHandler endp
 
 SoundHandler proc Param:dword 
-    INVOKE WaitForSingleObject, hSoundEventStart, 45
+    INVOKE WaitForSingleObject, hSoundEventStart, 30
 
     .IF eax == WAIT_TIMEOUT
-            .IF should_play_beep == TRUE
-                INVOKE PlaySound, OFFSET beep, NULL, SND_FILENAME
-                MOV should_play_beep, FALSE
-            .ELSEIF should_play_plop == TRUE
-                INVOKE PlaySound, OFFSET plop, NULL, SND_FILENAME
-                MOV should_play_plop, FALSE
-            .ELSEIF should_play_long_beep == TRUE
-                INVOKE PlaySound, OFFSET long_beep, NULL, SND_FILENAME
-                MOV should_play_long_beep, FALSE
-            .ELSEIF should_play_game_over == TRUE
-                INVOKE PlaySound, OFFSET game_over, NULL, SND_FILENAME
-                MOV should_play_game_over, FALSE
-            .ELSEIF should_play_starting == TRUE
-                INVOKE PlaySound, OFFSET starting, NULL, SND_FILENAME
-                MOV should_play_starting, FALSE
-            .ENDIF
+        .IF should_play_beep == TRUE
+            INVOKE PlaySound, OFFSET beep, NULL, SND_FILENAME
+            MOV should_play_beep, FALSE
+        .ELSEIF should_play_plop == TRUE
+            INVOKE PlaySound, OFFSET plop, NULL, SND_FILENAME
+            MOV should_play_plop, FALSE
+        .ELSEIF should_play_long_beep == TRUE
+            INVOKE PlaySound, OFFSET long_beep, NULL, SND_FILENAME
+            MOV should_play_long_beep, FALSE
+        .ELSEIF should_play_game_over == TRUE
+            INVOKE PlaySound, OFFSET game_over, NULL, SND_FILENAME
+            MOV should_play_game_over, FALSE
+        .ELSEIF should_play_starting == TRUE
+            INVOKE PlaySound, OFFSET starting, NULL, SND_FILENAME
+            MOV should_play_starting, FALSE
+        .ENDIF
     .ELSEIF eax == WAIT_OBJECT_0
     .ENDIF
 

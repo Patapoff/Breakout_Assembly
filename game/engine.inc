@@ -75,7 +75,7 @@ block_obj ends
     CELL_HT equ 23
     PLAYER_WD equ 120
     PLAYER_HT equ 23
-    SPEED equ 20
+    SPEED equ 15
 
     BLOCK_SIZE equ sizeof block_obj
 
@@ -86,7 +86,8 @@ block_obj ends
     BALL_BMP       equ 102
     PLAYER_BMP     equ 103
     GAME_OVER_BMP  equ 104
-    STARTING_BMP   equ 105
+    MENU_BMP       equ 105
+    STARTING_BMP   equ 106
 
 
     BUFFER_SIZE equ 64000
@@ -97,11 +98,12 @@ block_obj ends
 .data
 AppName   db "Atari Breakout", 0 ; Título da janela
 ClassName db "BreakoutClass", 0 ; Classe da janela
-starting  db "assets/sounds/starting.wav",0
-game_over db "assets/sounds/game_over.wav",0
-beep      db "assets/sounds/beep.wav",0
-long_beep db "assets/sounds/long_beep.wav",0
-plop      db "assets/sounds/plop.wav",0
+
+starting  db "assets/sounds/starting.wav", 0
+game_over db "assets/sounds/game_over.wav", 0
+beep      db "assets/sounds/beep.wav", 0
+long_beep db "assets/sounds/long_beep.wav", 0
+plop      db "assets/sounds/plop.wav", 0
 
 
 .data?                
@@ -112,12 +114,12 @@ hSoundEventStart DWORD ?
 hInstance HINSTANCE ? 
 hWnd HWND ?
 
-
 hBackgroundBmp DWORD ?
 hCellsBmp DWORD ?
 hBallBmp DWORD ?
 hPlayerBmp DWORD ?
 hGame_OverBmp DWORD ?
+hMenuBmp DWORD ?
 hStartingBmp DWORD ?
 
 ;=================
@@ -145,7 +147,9 @@ DrawBlocks PROTO : DWORD, : DWORD ; Desenha a bola
 
 DrawGameOver PROTO : DWORD, : DWORD ; Desenha a tela de game over
 
-DrawStarting proto : Dword, : DWORD  ; 
+DrawMenu proto : DWORD, : DWORD  ; 
+
+DrawStarting proto : BYTE, : DWORD, : DWORD  ; 
 
 MovePlayer proto ;Atualiza a posição de um ator
 
@@ -157,6 +161,6 @@ CheckRestart proto
 
 Initialize proto
 
-PlaySound PROTO ;Plays a fucking sound
+PlaySound PROTO ; Plays a fucking sound
 
 SoundHandler PROTO : DWORD ; Thread principal do jogo
